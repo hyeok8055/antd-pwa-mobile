@@ -16,6 +16,8 @@ export default defineConfig({
         short_name: 'Calorie Sync',
         description: 'Calorie Sync는 섭취한 칼로리와 나의 예측치를 비교하여 칼로리 관리를 도와줍니다.',
         theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
         icons: [
             {
               src: "./icons/apple-touch-icon-57x57.png",
