@@ -2,13 +2,16 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Provider } from 'react-redux'
 import store from './redux/store'
-import './index.css'
+import '@/styles/globals.css'
 import App from './App.jsx'
-
+import { ConfigProvider } from 'antd'
+import { antdTheme } from '@/styles/antdTheme'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Provider store={store}>
-      <App />
-    </Provider>
+    <ConfigProvider theme={antdTheme}>
+      <Provider store={store}>
+        <App />
+      </Provider>
+    </ConfigProvider>
   </StrictMode>,
 )

@@ -27,7 +27,7 @@ export default function NutrientPiechart() {
           },
           direction: "column",
           position: { vertical: "middle", horizontal: "right" },
-          padding: -7,
+          padding: -3,
           itemMarkWidth: 5,
           itemMarkHeight: 5,
           markGap: 3,

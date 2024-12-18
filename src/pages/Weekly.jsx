@@ -1,9 +1,10 @@
 import React from 'react';
-import { Card, Space, Typography, Flex, Progress } from 'antd';
+import { Card, Space, Typography, Flex, Progress, Row, Col } from 'antd';
 import { BankOutlined, FireOutlined } from '@ant-design/icons';
 import CalorieOverChart from '@/components/common/CalorieOverChart.jsx';
 import G2BarChart from '@/components/common/G2BarChart.jsx';
 import NutrientPiechart from '@/components/common/NutrientPiechart.jsx';
+
 
 const { Text } = Typography;
 
@@ -23,103 +24,103 @@ const Weekly = () => {
       </Flex>
 
       {/* 주간 칼로리 통계*/}
-      <Space className="h-[7%] justify-center w-full mb-5">
-        <Card bordered style={{ borderWidth: '1px', borderRadius: '14px' }}>
-          <Flex justify="space-between" align="center">
-            <Text className="font-bold">총 칼로리섭취량</Text>
-            <FireOutlined style={{ color: '#5FDD9D' }} />
-          </Flex>
-          <Text className="text-lg font-semibold text-jh-emphasize">
-            4,321 kcal
-          </Text>
-        </Card>
-        <Card bordered style={{ borderWidth: '1px', borderRadius: '14px' }}>
-          <Flex justify="space-between" align="center">
-            <Text className="font-bold">총 칼로리초과량</Text>
-            <BankOutlined style={{ color: '#DA6662' }} />
-          </Flex>
-          <Text className="text-lg font-semibold text-jh-red">
-            1,234 kcal
-          </Text>
-        </Card>
-      </Space>
+      <Row gutter={[16, 16]} className="h-[7%] justify-center w-full mb-1">
+        <Col span={11}>
+          <Card bordered style={{ borderWidth: '1px', borderRadius: '14px' }}>
+            <Row justify="space-between" align="middle">
+              <Col>
+                <Text className="font-bold">총 칼로리섭취량</Text>
+              </Col>
+              <Col>
+                <FireOutlined style={{ color: '#5FDD9D' }} />
+              </Col>
+            </Row>
+            <Text className="text-lg font-semibold text-jh-emphasize">
+              4,321 kcal
+            </Text>
+          </Card>
+        </Col>
+        <Col span={11}>
+          <Card bordered style={{ borderWidth: '1px', borderRadius: '14px' }}>
+            <Row justify="space-between" align="middle">
+              <Col>
+                <Text className="font-bold">총 칼로리초과량</Text>
+              </Col>
+              <Col>
+                <BankOutlined style={{ color: '#DA6662' }} />
+              </Col>
+            </Row>
+            <Text className="text-lg font-semibold text-jh-red">
+              1,234 kcal
+            </Text>
+          </Card>
+        </Col>
+      </Row>
 
       {/* 주간 칼로리 섭취 현황 */}
-      
       <Card
-        className="w-[90%] bg-bg1 rounded-xl shadow-md"
-        style={{ width: '90%' }}
-        // bodyStyle={{ padding: '0', height: '200px' }}
+        className="w-[90%] bg-bg1 rounded-xl shadow-md p-0"
+        style={{ width: '90%', height: '200px' }}
       >
-        <Flex
-          className="h-full w-full flex-col justify-end"
-          vertical
-          align="stretch"
-        >
-          <Flex className="h-full w-full justify-between">
-            <div className="h-[30%] w-[40%] ml-5 mt-8">
-              <Text className="text-base font-normal">칼로리 섭취량은</Text>
-              <Text className="text-base font-medium text-[#5FDD9D]">
+        <Row>
+          <Col span={24}>
+            <Text className="text-base font-normal">칼로리 섭취량은</Text>
+          </Col>
+          <Col span={24}>
+            <Text className="text-base font-medium text-[#5FDD9D]">
                 {calories}kcal
-              </Text>
-            </div>
-          </Flex>
-          <div className="w-full h-full">
+            </Text>
+          </Col>
+        </Row>
+        <Row>
+          <Col span={24}>
             <G2BarChart />
-          </div>
-        </Flex>
+          </Col>
+        </Row>
       </Card>
 
       {/* 주간 칼로리 초과 현황 */}
       <Card
         className="w-[90%] bg-bg1 rounded-xl shadow-md mt-5"
-        style={{ width: '90%' }}
-        // bodyStyle={{ padding: '0', height: '200px' }}
+        style={{ width: '90%', height: '200px' }}
       >
-        <Flex
-          className="h-full w-full flex-col justify-end"
-          vertical
-          align="stretch"
-        >
-          <Flex className="h-full w-full justify-between">
-            <div className="h-[30%] w-[40%] ml-5 mt-8">
-              <Text className="text-base font-normal">칼로리 초과량은</Text>
-              <Text className="text-base font-medium text-jh-red">
-                {calories}kcal
-              </Text>
-            </div>
-          </Flex>
-          <div className="w-full h-full">
+        <Row>
+          <Col span={24}>
+            <Text className="text-base font-normal">칼로리 초과량은</Text>
+          </Col>
+          <Col span={24}>
+            <Text className="text-base font-medium text-jh-red">
+              {calories}kcal
+            </Text>
+          </Col>
+          <Col span={24}>
             <CalorieOverChart />
-          </div>
-        </Flex>
+          </Col>
+        </Row>
       </Card>
 
       {/* 주간 영양소 현황 */}
       <Card
         className="w-[90%] bg-bg1 rounded-xl shadow-md mt-5"
-        style={{ width: '90%' }}
-        // bodyStyle={{ padding: '0', height: '200px' }}
+        style={{ width: '90%', height: '200px' }}
       >
-        <Flex className="h-full w-full justify-between">
-          <Flex className="h-full justify-center" vertical>
-            <div className="h-full ml-5 mt-7">
-              <Text className="text-base font-normal">
-                섭취 영양성분 비율은<br />
-              </Text>
-              <Text className="text-base font-medium text-jh-emphasize">
-                <span className="text-jh-emphasize">{nutrient}</span>
-                <span className="text-black">이 제일 많아요</span>
-              </Text>
-            </div>
-          </Flex>
-          <div className="h-full flex justify-center items-center pt-5 pr-2">
+        <Row>
+          <Col span={11}>
+            <Text className="text-base font-normal">
+              섭취 영양성분 비율은<br />
+            </Text>
+            <Text className="text-base font-medium text-jh-emphasize">
+              <span className="text-jh-emphasize">{nutrient}</span>
+              <span className="text-black">이 제일 많아요</span>
+            </Text>
+          </Col>
+          <Col span={13} style={{ marginTop: '15%' }}>
             <NutrientPiechart />
-          </div>
-        </Flex>
+          </Col>
+        </Row>
       </Card>
 
-      <div className="h-[100px] w-full" />
+      {/* <div className="h-[100px] w-full" /> */}
     </div>
   );
 };
