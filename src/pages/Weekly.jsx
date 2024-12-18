@@ -13,7 +13,7 @@ const Weekly = () => {
   const nutrient = '탄수화물';
 
   return (
-    <div className="flex flex-col h-[200vh] w-full items-center">
+    <div className="flex flex-col w-full items-center overflow-y-auto">
       <Flex justify="start" align="center" className="w-full ml-11 mb-5">
         <Text
           className="text-2xl font-bold text-jh-emphasize"
@@ -60,7 +60,7 @@ const Weekly = () => {
       {/* 주간 칼로리 섭취 현황 */}
       <Card
         className="w-[90%] bg-bg1 rounded-xl shadow-md p-0"
-        style={{ width: '90%', height: '200px' }}
+        style={{ width: '90%', height: '200px', marginTop: '15px' }}
       >
         <Row>
           <Col span={24}>
@@ -102,7 +102,7 @@ const Weekly = () => {
       {/* 주간 영양소 현황 */}
       <Card
         className="w-[90%] bg-bg1 rounded-xl shadow-md mt-5"
-        style={{ width: '90%', height: '200px' }}
+        style={{ width: '90%', height: '200px', marginBottom: '100px' }}
       >
         <Row>
           <Col span={11}>
@@ -119,8 +119,6 @@ const Weekly = () => {
           </Col>
         </Row>
       </Card>
-
-      {/* <div className="h-[100px] w-full" /> */}
     </div>
   );
 };
