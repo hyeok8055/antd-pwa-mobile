@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavBar, Space, Button } from 'antd-mobile';
 import { SetOutline } from 'antd-mobile-icons';
 import { useNavigate } from 'react-router-dom';
+import SidePopUp from './common/SidePopUp';
 
 const Header = () => {
   const navigate = useNavigate();
+  const [visiblePopup, setVisiblePopup] = useState(false);
 
   const handleLogout = () => {
     localStorage.setItem('isAuthenticated', 'false');
@@ -14,7 +16,7 @@ const Header = () => {
   const right = (
     <div style={{ fontSize: 27 }}>
       <Space style={{ '--gap': '16px', marginTop: '15px' }}>
-        <SetOutline />
+        <SetOutline onClick={() => setVisiblePopup(true)} />
       </Space>
     </div>
   );
@@ -33,7 +35,14 @@ const Header = () => {
   );
 
   return (
-    <NavBar right={right} left={left} backIcon={false}></NavBar>
+    <>
+      <NavBar right={right} backIcon={false}></NavBar>
+      <SidePopUp 
+        visible={visiblePopup} 
+        onClose={() => setVisiblePopup(false)} 
+        onLogout={handleLogout}
+      />
+    </>
   );
 };
 
