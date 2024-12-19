@@ -1,21 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { MemoryRouter as Router, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { MemoryRouter as Router, useLocation, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
+import { auth } from './firebaseconfig'; // Firebase 설정 파일 경로 확인
+import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const storedAuth = localStorage.getItem('isAuthenticated');
-    return storedAuth === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Firebase Auth 상태 확인 및 인증 지속성 설정
   useEffect(() => {
-    localStorage.setItem('isAuthenticated', isAuthenticated);
-  }, [isAuthenticated]);
+    // 인증 상태 지속성을 localPersistence로 설정
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        console.log("Firebase 인증 상태가 localPersistence로 설정되었습니다.");
+      })
+      .catch((error) => {
+        console.error("지속성 설정 오류:", error);
+      });
+
+    // Firebase 인증 상태 확인
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true); // 로그인 상태 설정
+      } else {
+        setIsAuthenticated(false); // 로그아웃 상태 설정
+      }
+    });
+
+    // 리스너 정리
+    return () => unsubscribe();
+  }, []);
 
   return (
-    <Router initialEntries={['/main']}>
+    <Router initialEntries={['/googlelogin']}>
       <ConditionalHeaderFooter isAuthenticated={isAuthenticated} />
     </Router>
   );
@@ -23,11 +42,18 @@ const App = () => {
 
 const ConditionalHeaderFooter = ({ isAuthenticated }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // 로그인되지 않은 사용자가 main 접근 시 GoogleLogin으로 리다이렉트
+  useEffect(() => {
+    if (!isAuthenticated && location.pathname === '/main') {
+      navigate('/googlelogin');
+    }
+  }, [isAuthenticated, location.pathname, navigate]);
 
   // Header와 Footer를 숨길 라우트 목록
   const hiddenRoutes = ['/googlelogin'];
 
-  // 현재 라우트가 hiddenRoutes에 포함되어 있는지 확인
   const shouldHideHeaderFooter = hiddenRoutes.includes(location.pathname);
 
   return (
@@ -46,7 +72,7 @@ const ConditionalHeaderFooter = ({ isAuthenticated }) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 export default App;
