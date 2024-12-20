@@ -12,6 +12,9 @@ export default defineConfig({
       devOptions: {
         enabled: true
       },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB로 한도 증가
+      },
       manifest: {
         name: 'Calorie Sync',
         short_name: 'Calorie Sync',
