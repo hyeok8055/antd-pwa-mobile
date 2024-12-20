@@ -3,15 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import GoogleButton from 'react-google-button';
 import { auth } from "../../firebaseconfig";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useDispatch } from 'react-redux';
+import { setAuthStatus } from '../../redux/actions/authActions';
 
 const GoogleLogin = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleGoogleLogin = () => {
     const provider = new GoogleAuthProvider(); // provider 구글 설정
     signInWithPopup(auth, provider) // 팝업창 띄워서 로그인
-      .then((data) => {
-        console.log(data); // 콘솔에 UserCredentialImpl 출력
+      .then((result) => {
+        const user = result.user;
+        // 필요한 정보만 추출하여 직렬화 가능한 객체로 만들기
+        const serializedUser = {
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          // ... 필요한 다른 정보들 ...
+        };
+        dispatch(setAuthStatus(serializedUser)); // Redux에 인증 상태 저장
         navigate('/main'); // 로그인 성공 시 main 페이지로 이동
       })
       .catch((err) => {

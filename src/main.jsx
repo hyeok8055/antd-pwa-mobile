@@ -1,17 +1,22 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
-import store from './redux/store';
 import '@/styles/globals.css';
 import App from './App.jsx';
-import { ConfigProvider } from 'antd';
+// import { ConfigProvider } from 'antd';
+import { ConfigProvider } from 'antd-mobile';
 import { antdTheme } from '@/styles/antdTheme';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from './redux/store';
+import ko_KR from 'antd-mobile/es/locales/ko-KR'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ConfigProvider theme={antdTheme}>
+    <ConfigProvider theme={antdTheme} locale={ko_KR}>
       <Provider store={store}>
-        <App />
+        <PersistGate loading={null} persistor={persistor}>
+          <App />
+        </PersistGate>
       </Provider>
     </ConfigProvider>
   </StrictMode>

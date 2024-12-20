@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Space, Typography, Flex, Progress, Row, Col } from 'antd';
+import { Card, Typography, Flex, Row, Col } from 'antd';
 import { BankOutlined, FireOutlined } from '@ant-design/icons';
 import CalorieOverChart from '@/components/common/CalorieOverChart.jsx';
 import G2BarChart from '@/components/common/G2BarChart.jsx';
@@ -26,7 +26,10 @@ const Weekly = () => {
       {/* 주간 칼로리 통계*/}
       <Row gutter={[16, 16]} className="h-[7%] justify-center w-full mb-1">
         <Col span={11}>
-          <Card bordered style={{ borderWidth: '1px', borderRadius: '14px' }}>
+          <Card
+            bordered
+            className="bg-bg1 rounded-xl shadow-md p-0"
+            style={{ borderWidth: '1px', borderRadius: '14px' }}>
             <Row justify="space-between" align="middle">
               <Col>
                 <Text className="font-bold">총 칼로리섭취량</Text>
@@ -41,7 +44,10 @@ const Weekly = () => {
           </Card>
         </Col>
         <Col span={11}>
-          <Card bordered style={{ borderWidth: '1px', borderRadius: '14px' }}>
+          <Card
+            bordered
+            className="bg-bg1 rounded-xl shadow-md p-0"
+            style={{ borderWidth: '1px', borderRadius: '14px' }}>
             <Row justify="space-between" align="middle">
               <Col>
                 <Text className="font-bold">총 칼로리초과량</Text>

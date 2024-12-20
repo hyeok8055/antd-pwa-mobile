@@ -1,29 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebaseconfig";
 import Main from "./pages/Main";
-import Fitness from "./pages/Fitness";
+import Fitness from "./pages/fitness/Fitness";
 import Weekly from "./pages/Weekly";
 import GoogleLogin from "./pages/auth/GoogleLogin";
+import { useSelector } from 'react-redux';
 
 const AppRoutes = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // 로딩 중일 때 처리
-  if (loading) {
-    return <div>로딩 중...</div>; // 로딩 화면이나 스피너 추가 가능
-  }
-
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   return (
     <Routes>
       {/* 초기 경로 처리 */}

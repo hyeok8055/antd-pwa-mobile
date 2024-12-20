@@ -1,48 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { MemoryRouter as Router, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate, BrowserRouter } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
-import { auth } from './firebaseconfig'; // Firebase 설정 파일 경로 확인
-import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { auth } from './firebaseconfig';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useDispatch, useSelector } from 'react-redux';
+import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
 
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const dispatch = useDispatch();
 
-  // Firebase Auth 상태 확인 및 인증 지속성 설정
   useEffect(() => {
-    // 인증 상태 지속성을 localPersistence로 설정
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        console.log("Firebase 인증 상태가 localPersistence로 설정되었습니다.");
-      })
-      .catch((error) => {
-        console.error("지속성 설정 오류:", error);
-      });
-
-    // Firebase 인증 상태 확인
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setIsAuthenticated(true); // 로그인 상태 설정
+        const serializedUser = {
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+        };
+        console.log("serializedUser:", serializedUser);
+        dispatch(setAuthStatus(serializedUser));
       } else {
-        setIsAuthenticated(false); // 로그아웃 상태 설정
+        dispatch(clearAuthStatus());
       }
     });
 
-    // 리스너 정리
     return () => unsubscribe();
-  }, []);
+  }, [dispatch]);
 
   return (
-    <Router initialEntries={['/googlelogin']}>
-      <ConditionalHeaderFooter isAuthenticated={isAuthenticated} />
-    </Router>
+    <BrowserRouter>
+      <ConditionalHeaderFooter />
+    </BrowserRouter>
   );
 };
 
-const ConditionalHeaderFooter = ({ isAuthenticated }) => {
+const ConditionalHeaderFooter = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   // 로그인되지 않은 사용자가 main 접근 시 GoogleLogin으로 리다이렉트
   useEffect(() => {
@@ -59,12 +56,12 @@ const ConditionalHeaderFooter = ({ isAuthenticated }) => {
   return (
     <div className="app h-screen overflow-y-auto overflow-x-hidden flex flex-col">
       {!shouldHideHeaderFooter && (
-        <div className="h-[7%]">
+        <div className="h-[7%] z-10">
           <Header />
         </div>
       )}
       <div className="flex-1 h-[86%] border-b border-gray-200">
-        <AppRoutes isAuthenticated={isAuthenticated} />
+        <AppRoutes />
       </div>
       {!shouldHideHeaderFooter && (
         <div className="fixed bottom-0 left-0 right-0 h-[7%] bg-white shadow-md flex items-center border-t border-gray-300">
