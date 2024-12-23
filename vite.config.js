@@ -92,7 +92,10 @@ export default defineConfig({
               type: "image/png"
             }
           ]
-      }
+      },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정 (필요에 따라 조정)
+      },
     })
   ],
   resolve: {
