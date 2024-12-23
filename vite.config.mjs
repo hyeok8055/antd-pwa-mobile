@@ -103,4 +103,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    target: 'esnext', // 최신 ES 문법을 타겟으로 설정
+  },
 });
