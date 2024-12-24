@@ -1,0 +1,52 @@
+[
+  {
+    "name": "김치찌개",
+    "country": "한식",
+    "image": "/no-image.png"
+  },
+  {
+    "name": "된장찌개",
+    "country": "한식",
+    "image": "/no-image.png"
+  },
+  {
+    "name": "비빔밥",
+    "country": "한식",
+    "image": "/no-image.png"
+  },
+    {
+    "name": "불고기",
+    "country": "한식",
+    "image": "/no-image.png"
+  },
+  {
+    "name": "초밥",
+    "country": "일식",
+    "image": "/no-image.png"
+  },
+  {
+    "name": "라멘",
+    "country": "일식",
+    "image": "/no-image.png"
+  },
+  {
+    "name": "돈까스",
+    "country": "일식",
+    "image": "/no-image.png"
+  },
+    {
+    "name": "스테이크",
+    "country": "양식",
+    "image": "/no-image.png"
+  },
+  {
+    "name": "파스타",
+    "country": "양식",
+    "image": "/no-image.png"
+  },
+  {
+    "name": "피자",
+    "country": "양식",
+    "image": "/no-image.png"
+  }
+]
