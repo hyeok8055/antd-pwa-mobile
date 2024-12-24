@@ -60,7 +60,7 @@ const ConditionalHeaderFooter = () => {
           <Header />
         </div>
       )}
-      <div className="flex-1 h-[88%] border-b border-gray-200">
+      <div className="flex-1 h-[88%]">
         <AppRoutes />
       </div>
       {!shouldHideHeaderFooter && (
