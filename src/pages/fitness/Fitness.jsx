@@ -25,7 +25,6 @@ export default () => {
   const [forceUpdate, setForceUpdate] = useState(0);
 
   useEffect(() => {
-    console.log("fitnessData changed:", fitnessData);
     // 오늘 날짜에 해당하는 데이터가 있으면 기본값 설정
     const todayData = fitnessData.find(item => item.date === today.toISOString().split('T')[0]);
     if (todayData) {
@@ -38,8 +37,20 @@ export default () => {
         firebaseId: exercise.id
       })));
     } else {
-        setWeight(null);
-        setCards([]);
+        // 오늘 데이터가 없으면 가장 최신 데이터로 설정
+        if (fitnessData.length > 0) {
+          setWeight(fitnessData[0].weight);
+          setCards(fitnessData[0].exercises.map((exercise, index) => ({
+            id: Date.now() + index,
+            exercise: exercise.exercise,
+            duration: exercise.duration,
+            isNew: false,
+            firebaseId: exercise.id
+          })));
+        } else {
+          setWeight(null);
+          setCards([]);
+        }
     }
 
     // 달력 데이터 설정

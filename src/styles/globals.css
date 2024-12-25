@@ -1,5 +1,39 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@layer base {
+    /* 로컬 폰트 설정 */
+    @font-face {
+        font-family: "Pretendard-900"; /* 로컬 폰트 설정 */
+        src: url("/public/fonts/PretendardVariable.woff2") format("woff2"); /* 폰트 파일 경로 및 형식 설정 */
+        font-weight: 900;
+    }
+    @font-face {
+        font-family: "Pretendard-800"; /* 로컬 폰트 설정 */
+        src: url("/public/fonts/PretendardVariable.woff2") format("woff2"); /* 폰트 파일 경로 및 형식 설정 */
+        font-weight: 800;
+    }
+    @font-face {
+        font-family: "Pretendard-700"; /* 로컬 폰트 설정 */
+        src: url("/public/fonts/PretendardVariable.woff2") format("woff2"); /* 폰트 파일 경로 및 형식 설정 */
+        font-weight: 700;
+    }
+    @font-face {
+        font-family: "Pretendard-600"; /* 로컬 폰트 설정 */
+        src: url("/public/fonts/PretendardVariable.woff2") format("woff2"); /* 폰트 파일 경로 및 형식 설정 */
+        font-weight: 600;
+    }
+    @font-face {
+        font-family: "Pretendard-500"; /* 로컬 폰트 설정 */
+        src: url("/public/fonts/PretendardVariable.woff2") format("woff2"); /* 폰트 파일 경로 및 형식 설정 */
+        font-weight: 500;
+    }
+    @font-face {
+        font-family: "Pretendard-400"; /* 로컬 폰트 설정 */
+        src: url("/public/fonts/PretendardVariable.woff2") format("woff2"); /* 폰트 파일 경로 및 형식 설정 */
+        font-weight: 400;
+    }
+
+}

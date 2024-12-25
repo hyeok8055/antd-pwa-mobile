@@ -29,7 +29,9 @@ const Weekly = () => {
           <Card
             bordered
             className="bg-bg1 rounded-xl shadow-md p-0"
-            style={{ borderWidth: '1px', borderRadius: '14px' }}>
+            style={{ borderWidth: '1px', borderRadius: '14px' }}
+            bodyStyle={{ padding: '18px' }}
+          >
             <Row justify="space-between" align="middle">
               <Col>
                 <Text className="font-bold">총 칼로리섭취량</Text>
@@ -47,7 +49,9 @@ const Weekly = () => {
           <Card
             bordered
             className="bg-bg1 rounded-xl shadow-md p-0"
-            style={{ borderWidth: '1px', borderRadius: '14px' }}>
+            style={{ borderWidth: '1px', borderRadius: '14px' }}
+            bodyStyle={{ padding: '18px' }}
+          >
             <Row justify="space-between" align="middle">
               <Col>
                 <Text className="font-bold">총 칼로리초과량</Text>
@@ -112,10 +116,10 @@ const Weekly = () => {
       >
         <Row>
           <Col span={11}>
-            <Text className="text-base font-normal">
-              섭취 영양성분 비율은<br />
+            <Text className="text-base font-normal" style={{ whiteSpace: 'nowrap' }}>
+              섭취 영양성분 비율은
             </Text>
-            <Text className="text-base font-medium text-jh-emphasize">
+            <Text className="text-base font-medium text-jh-emphasize inline-block" style={{ whiteSpace: 'nowrap' }}>
               <span className="text-jh-emphasize">{nutrient}</span>
               <span className="text-black">이 제일 많아요</span>
             </Text>

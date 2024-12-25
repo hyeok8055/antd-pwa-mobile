@@ -6,6 +6,7 @@ import Weekly from "./pages/Weekly";
 import GoogleLogin from "./pages/auth/GoogleLogin";
 import { useSelector } from 'react-redux';
 import FoodList from "./pages/food/FoodList";
+import CaloriEntry from "./pages/calories/CaloriEntry";
 
 const AppRoutes = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -25,6 +26,7 @@ const AppRoutes = () => {
           <Route path="/fitness" element={<Fitness />} />
           <Route path="/weekly" element={<Weekly />} />
           <Route path="/meals/:mealType" element={<FoodList />} />
+          <Route path="/calories/calorieEntry" element={<CaloriEntry />} />
           <Route path="*" element={<Navigate to="/main" />} />
         </>
       ) : (

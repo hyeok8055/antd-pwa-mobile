@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Typography, Input, Row, Col, Select, Checkbox, Button } from 'antd';
 import Fuse from "fuse.js";
-import foodData from "./foodData.json";
+import tempFoodData from "./temp_foods.json";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import noImage from "/public/no-image.png";
-
+import noImage from "../../assets/no-image.png";
+import { CheckCircleTwoTone } from '@ant-design/icons';
 const { Text } = Typography;
 const { Search } = Input;
 
@@ -12,18 +12,18 @@ const { Search } = Input;
 const Meal = () => {
   const { mealType } = useParams();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredFood, setFilteredFood] = useState(foodData);
+  const [filteredFood, setFilteredFood] = useState(Object.values(tempFoodData.foods));
   const [selectedCountry, setSelectedCountry] = useState('default');
   const [selectedItems, setSelectedItems] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fuse = new Fuse(foodData, {
+    const fuse = new Fuse(Object.values(tempFoodData.foods), {
       keys: ["name"],
       threshold: 0.3,
     });
 
-    let result = searchTerm ? fuse.search(searchTerm).map(item => item.item) : foodData;
+    let result = searchTerm ? fuse.search(searchTerm).map(item => item.item) : Object.values(tempFoodData.foods);
 
     if (selectedCountry !== 'default') {
       result = result.filter(item => item.country === selectedCountry);
@@ -69,45 +69,33 @@ const Meal = () => {
   return (
     <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Row justify="space-between" style={{ marginBottom: 20 }}>
-        <Text style={{ fontSize: '24px', fontWeight: '800', color: '#5FDD9D', letterSpacing: '1px' }}>
+        <Text style={{ fontSize: '24px', fontWeight: '800', color: '#5FDD9D', letterSpacing: '1px', fontFamily: 'Pretendard-800'}}>
           {getMealTitle()} 식사목록
         </Text>
-        <Button type="primary" onClick={handleNextClick} disabled={selectedItems.length === 0}>
+        <Button type="primary" onClick={handleNextClick} disabled={selectedItems.length === 0} style={{ fontFamily: 'Pretendard-700'}}>
           다음으로
         </Button>
       </Row>
       <Row gutter={[16, 24]} align="middle" style={{ marginBottom: 20 }}>
-        <Col>
-          <Select
-            defaultValue="default"
-            style={{ width: 120 }}
-            onChange={handleCountryChange}
-            options={[
-              { value: 'default', label: '전체' },
-              { value: '한식', label: '한식' },
-              { value: '일식', label: '일식' },
-              { value: '양식', label: '양식' },
-            ]}
-          />
-        </Col>
         <Col flex="auto">
           <Search
             placeholder="음식 검색"
             value={searchTerm}
+            size="large"
             onChange={handleSearchChange}
             style={{ width: '100%'}}
           />
         </Col>
       </Row>
       <div style={{ overflowY: 'auto', flex: 1 }}>
-        <Row gutter={[16, 12]}>
+        <Row gutter={[16, 12]} style={{ marginRight: 0, marginLeft: 0 }}>
           {[...selectedItems, ...filteredFood.filter(item => !selectedItems.includes(item))].map((item, index) => (
             <Col span={12} key={index}>
               <div
                 onClick={() => handleItemSelect(item)}
                 className="bg-bg1 rounded-xl shadow-lg mt-5"
                 style={{
-                  width: '95%',
+                  width: '100%',
                   height: '48px',
                   border: '1px solid #d9d9d9',
                   display: 'flex',
@@ -129,11 +117,10 @@ const Meal = () => {
                       marginRight: 16,
                     }}
                   />
-                  <Text style={{ fontSize: '16px', fontWeight: '500', color: '#333' }}>{item.name}</Text>
+                  <Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>{item.name}</Text>
                   {selectedItems.includes(item) && (
-                    <Checkbox
-                      checked
-                      style={{ position: 'absolute', right: 16, pointerEvents: 'none' }}
+                    <CheckCircleTwoTone
+                      style={{ position: 'absolute', right: 60, pointerEvents: 'none', fontSize: 30 }}
                     />
                   )}
                 </div>
