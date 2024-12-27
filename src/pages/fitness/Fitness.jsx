@@ -28,32 +28,27 @@ export default () => {
     // 오늘 날짜에 해당하는 데이터가 있으면 기본값 설정
     const todayData = fitnessData.find(item => item.date === today.toISOString().split('T')[0]);
     if (todayData) {
+      // 오늘 데이터가 있으면 그대로 사용
       setWeight(todayData.weight);
       setCards(todayData.exercises.map((exercise, index) => ({
-        id: Date.now() + index, // 고유한 ID 생성
+        id: Date.now() + index,
         exercise: exercise.exercise,
         duration: exercise.duration,
         isNew: false,
         firebaseId: exercise.id
       })));
     } else {
-        // 오늘 데이터가 없으면 가장 최신 데이터로 설정
-        if (fitnessData.length > 0) {
-          setWeight(fitnessData[0].weight);
-          setCards(fitnessData[0].exercises.map((exercise, index) => ({
-            id: Date.now() + index,
-            exercise: exercise.exercise,
-            duration: exercise.duration,
-            isNew: false,
-            firebaseId: exercise.id
-          })));
-        } else {
-          setWeight(null);
-          setCards([]);
-        }
+      // 오늘 데이터가 없으면 몸무게만 최신 데이터에서 가져오기
+      if (fitnessData.length > 0) {
+        setWeight(fitnessData[0].weight);
+      } else {
+        setWeight(null);
+      }
+      // 운동 기록은 무조건 비움
+      setCards([]);
     }
 
-    // 달력 데이터 설정
+    // 달력 데이터 설정 (기존 데이터 유지)
     const initialCalendarData = {};
     fitnessData.forEach(item => {
       initialCalendarData[item.date] = item.weight;
@@ -94,6 +89,17 @@ export default () => {
   // 카드 추가 핸들러
   const handleAddCard = () => {
     setCards([...cards, { id: Date.now(), exercise: "", duration: "", isNew: true }]); // 새로운 카드 추가
+    
+    // 새로운 카드가 렌더링된 후 스크롤
+    setTimeout(() => {
+      const container = document.querySelector('.overflow-y-auto');
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
   };
 
   const deleteCard = async (id) => {
