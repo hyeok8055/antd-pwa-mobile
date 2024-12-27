@@ -1,9 +1,10 @@
 import { combineReducers } from 'redux';
-import authReducer from './authReducer'; // authReducer 추가
+import authReducer from './authReducer';
+import weeklyReducer from './weeklyReducer';
 
 const rootReducer = combineReducers({
-  auth: authReducer, // auth 상태 추가
-  // ... 다른 리듀서 추가 ...
+  auth: authReducer,
+  weekly: weeklyReducer,
 });
 
 export default rootReducer; 

@@ -1,17 +1,19 @@
 import * as React from "react";
 import { PieChart } from "@mui/x-charts/PieChart";
 
-export default function NutrientPiechart() {
+export default function NutrientPiechart({ data }) {
+  if (!data || data.length === 0) return null;
+
   return (
     <PieChart
       margin={{ top: 0, bottom: 0, left: 0, right: 60 }}
       series={[
         {
-          data: [
-            { id: 0, value: 20, label: "탄수화물" },
-            { id: 1, value: 15, label: "단백질" },
-            { id: 2, value: 10, label: "지방" },
-          ],
+          data: data.map((item, index) => ({
+            id: index,
+            value: item.count,
+            label: item.item,
+          })),
           innerRadius: 0,
           paddingAngle: 1,
           cornerRadius: 3,

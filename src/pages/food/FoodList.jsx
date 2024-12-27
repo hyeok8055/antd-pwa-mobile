@@ -47,8 +47,9 @@ const Meal = () => {
   };
 
   const handleNextClick = () => {
+    const type = mealType === 'snack' ? 'snacks' : mealType;
     const selectedItemNames = selectedItems.map(item => item.name).join(',');
-    navigate(`/calories/calorieEntry?items=${selectedItemNames}`);
+    navigate(`/calories/calorieEntry?items=${selectedItemNames}&type=${type}`);
   };
 
   const getMealTitle = () => {

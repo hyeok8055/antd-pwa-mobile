@@ -1,112 +1,94 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/firebaseconfig';
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
-import { getDatabase, ref, get } from "firebase/database";
+import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getDatabase, ref, get } from 'firebase/database';
+import { useSelector } from 'react-redux';
 
-export const useFood = (uid) => {
-  const [foodData, setFoodData] = useState(null);
+const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const useFood = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [foodInfo, setFoodInfo] = useState(null);
-
-  // 오늘 날짜를 YYYY-MM-DD 형식으로 가져오는 함수
-  const getTodayDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const [foodData, setFoodData] = useState(null);
+  const uid = useSelector((state) => state.auth.user?.uid);
 
   useEffect(() => {
-    const fetchTodayFoodData = async () => {
-      if (!uid) return;
-      const today = getTodayDate();
-      try {
-        setLoading(true);
-        const docRef = doc(db, 'users', uid, 'foods', today);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setFoodData(docSnap.data());
-        } else {
-          // 오늘 데이터가 없으면 초기화 후 Firestore에 저장
-          const initialData = {
-            date: today,
-            breakfast: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            lunch: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            dinner: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            snacks: { foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-          };
-          await setDoc(docRef, initialData);
-          setFoodData(initialData);
-        }
-      } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTodayFoodData();
+    if (uid) {
+      fetchFoodData();
+    }
   }, [uid]);
 
-  // Firebase Realtime Database에서 음식 정보 가져오기
-  useEffect(() => {
-    const fetchFoodInfo = async () => {
-        try {
-            const db = getDatabase();
-            const foodRef = ref(db, 'foods'); // 'foods'는 데이터베이스의 최상위 노드 이름이라고 가정
-            const snapshot = await get(foodRef);
-            if (snapshot.exists()) {
-                // 데이터 구조에 맞게 수정
-                const data = snapshot.val();
-                const formattedData = {};
-                for (const key in data) {
-                    formattedData[data[key].name] = data[key];
-                }
-                setFoodInfo(formattedData);
-            } else {
-                console.log("No food data available");
-                setFoodInfo({});
-            }
-        } catch (error) {
-            console.error("Error fetching food data:", error);
-            setError(error);
-        }
-    };
+  const fetchFoodData = async () => {
+    setLoading(true);
+    try {
+      const today = getTodayDate();
+      const docRef = doc(db, 'users', uid, 'foods', today);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setFoodData(docSnap.data());
+      } else {
+        setFoodData({
+          date: today,
+          breakfast: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
+          lunch: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
+          dinner: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
+          snacks: { foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
+        });
+      }
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchFoodInfo();
-  }, []);
-
-  const saveMealData = useCallback(
-    async (mealType, foods) => {
-      if (!uid || !mealType || !foods) return;
+  const saveFoodData = useCallback(
+    async (mealType, foods = [], estimatedCalories = null, actualCalories = null, selectedFoods = [], flag = 0) => {
+      if (!uid || !mealType) {
+        console.error('uid 또는 mealType이 없습니다:', { uid, mealType });
+        return;
+      }
       setLoading(true);
       try {
         const today = getTodayDate();
         const docRef = doc(db, 'users', uid, 'foods', today);
-        
-        // 기존 데이터 가져오기
+
+        // // 저장할 데이터 로깅
+        // console.log('저장할 데이터:', {
+        //   mealType,
+        //   foods,
+        //   estimatedCalories,
+        //   actualCalories,
+        //   selectedFoods,
+        //   flag
+        // });
+
         const docSnap = await getDoc(docRef);
         let currentData = docSnap.exists() ? docSnap.data() : {
-            date: today,
-            breakfast: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            lunch: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            dinner: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            snacks: { foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-          };
+          date: today,
+        };
 
-        // 해당 식사 데이터 업데이트
-        if (currentData[mealType]) {
-          currentData[mealType] = { flag: 1, foods: foods };
-        } else {
-          currentData[mealType] = { foods: foods };
-        }
+        currentData[mealType] = {
+          flag: mealType !== 'snacks' ? flag : currentData[mealType]?.flag || 0,
+          foods: foods,
+          estimatedCalories: estimatedCalories !== null ? Number(estimatedCalories) : null,
+          actualCalories: actualCalories !== null ? Number(actualCalories) : null,
+          selectedFoods: selectedFoods,
+        };
+
+        // 최종 저장될 데이터 로깅
+        console.log('최종 데이터:', currentData);
 
         await setDoc(docRef, currentData, { merge: true });
         setFoodData(currentData);
       } catch (err) {
+        console.error('저장 중 에러 발생:', err);
         setError(err);
       } finally {
         setLoading(false);
@@ -115,50 +97,36 @@ export const useFood = (uid) => {
     [uid]
   );
 
-  const saveCalorieData = useCallback(
-    async (mealType, estimatedCalories, actualCalories, selectedFoods) => {
-      if (!uid || !mealType) return;
-      setLoading(true);
-      try {
-        const today = getTodayDate();
-        const docRef = doc(db, 'users', uid, 'foods', today);
-        
-        // 기존 데이터 가져오기
-        const docSnap = await getDoc(docRef);
-         let currentData = docSnap.exists() ? docSnap.data() : {
-            date: today,
-            breakfast: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            lunch: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            dinner: { flag: 0, foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-            snacks: { foods: [], estimatedCalories: null, actualCalories: null, selectedFoods: [] },
-          };
+  const fetchFoodDetails = useCallback(async (foodNames) => {
+    if (!foodNames || foodNames.length === 0) return [];
+    setLoading(true);
+    try {
+      const rtdb = getDatabase();
+      const foodDetails = [];
 
-        // 해당 식사 칼로리 데이터 업데이트
-        if (currentData[mealType]) {
-          currentData[mealType] = {
-            ...currentData[mealType],
-            estimatedCalories: Number(estimatedCalories),
-            actualCalories: Number(actualCalories),
-            selectedFoods: selectedFoods,
-          };
+      for (const foodName of foodNames) {
+        const foodRef = ref(rtdb, `foods/${foodName}`);
+        const snapshot = await get(foodRef);
+
+        if (snapshot.exists()) {
+          foodDetails.push({
+            name: foodName,
+            ...snapshot.val()
+          });
         } else {
-          currentData[mealType] = {
-            estimatedCalories: Number(estimatedCalories),
-            actualCalories: Number(actualCalories),
-            selectedFoods: selectedFoods,
-          };
+          console.log(`${foodName}에 대한 정보가 없습니다.`);
+          foodDetails.push({ name: foodName, error: '정보 없음' });
         }
-
-        await setDoc(docRef, currentData, { merge: true });
-        setFoodData(currentData);
-      } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
       }
-    },
-    [uid]
-  );
+      return foodDetails;
+    } catch (err) {
+      console.error('음식 정보를 가져오는 중 오류 발생:', err);
+      setError(err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  return { foodData, saveMealData, saveCalorieData, loading, error, foodInfo };
+  return { loading, error, foodData, saveFoodData, fetchFoodDetails };
 };

@@ -189,8 +189,8 @@ export default () => {
             value={weight}
             onChange={handleWeightChange}
             />
-            <Button color="primary" variant="outlined" onClick={handleSubmit}>
-              저장
+            <Button color="primary" variant="outlined" size="large" style={{ fontFamily: 'Pretendard-600', fontSize: '15px', letterSpacing: '2px' }} onClick={handleSubmit}>
+              기록
             </Button>
           </Flex>
         </div>

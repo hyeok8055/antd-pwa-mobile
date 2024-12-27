@@ -9,6 +9,7 @@ const firebaseConfig = {
   authDomain: 'calori-sync-f0431.firebaseapp.com',
   projectId: 'calori-sync-f0431',
   storageBucket: 'calori-sync-f0431.firebasestorage.app',
+  databaseURL: 'https://calori-sync-f0431-default-rtdb.asia-southeast1.firebasedatabase.app/',
   messagingSenderId: '830533101887',
   appId: '  1:830533101887:web:5bd8aed35d49ea87758b8a',
   measurementId: 'G-55K939QBD7',  
