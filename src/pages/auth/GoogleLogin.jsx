@@ -39,6 +39,7 @@ const GoogleLogin = () => {
 
       if (!userDoc.exists()) {
         userData.createdAt = serverTimestamp();
+        userData.setupCompleted = false; // 새로운 사용자 표시
       }
 
       await setDoc(userRef, userData, { merge: true });
@@ -46,8 +47,12 @@ const GoogleLogin = () => {
       // Redux에 인증 상태 저장
       dispatch(setAuthStatus(serializedUser));
 
-      // 메인 페이지로 이동
-      navigate('/main');
+      // 새 사용자면 인트로 페이지로, 기존 사용자면 메인 페이지로
+      if (!userDoc.exists()) {
+        navigate('/intro');
+      } else {
+        navigate('/main');
+      }
     } catch (err) {
       console.error("Google 로그인 오류:", err);
     }
@@ -55,7 +60,7 @@ const GoogleLogin = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
-      <div className="bg-white shadow-md rounded-lg px-10 py-6 text-center w-96">
+      <div className="bg-white shadow-md rounded-md px-10 py-6 text-center w-96">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">Google 로그인</h1>
         <p className="text-gray-600 mb-6">
           Google 계정을 사용해 손쉽게 로그인하세요!

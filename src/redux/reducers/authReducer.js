@@ -12,7 +12,10 @@ const authReducer = (state = initialState, action) => {
       return {
         ...state,
         isAuthenticated: !!action.payload,
-        user: action.payload,
+        user: {
+          ...action.payload,
+          setupCompleted: action.payload.setupCompleted || false,
+        },
       };
     case CLEAR_AUTH_STATUS:
       return {
