@@ -6,28 +6,67 @@ import G2BarChart from '@/components/common/G2BarChart.jsx';
 import NutrientPiechart from '@/components/common/NutrientPiechart.jsx';
 import { useDispatch, useSelector } from 'react-redux';
 import { db } from '@/firebaseconfig';
-import { collection, query, getDocs, where } from 'firebase/firestore';
-import { setWeeklyData } from '@/redux/actions/weeklyActions';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFitness } from '@/hook/useFitness';
 
 const { Text } = Typography;
 
 const Weekly = () => {
   const dispatch = useDispatch();
   const uid = useSelector((state) => state.auth.user?.uid);
-  const { weeklyData, lastFetched } = useSelector((state) => state.weekly);
-  const [loading, setLoading] = useState(true);
+  const { weeklyData } = useSelector((state) => state.weekly);
+  const [user, setUser] = useState(null);
+  const [recommendedDailyCalories, setRecommendedDailyCalories] = useState(null);
+  const { fitnessData, loading: fitnessLoading } = useFitness(uid);
 
-  // 권장 칼로리 상수 추가
-  const RECOMMENDED_DAILY_CALORIES = 2000;
+  const calculateBMR = (gender, height, weight, age) => {
+    let bmr = 0;
+    if (gender === 'male') {
+      bmr = 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
+    } else if (gender === 'female') {
+      bmr = 655 + (9.6 * weight) + (1.85 * height) - (4.7 * age);
+    }
+    // console.log(bmr);
+    return Math.round(bmr);
+  };
 
-  // 주의 시작일(일요일)과 종료일(토요일) 구하기
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUser(userData);
+          
+          const today = new Date().toISOString().split('T')[0];
+          const todayFitnessData = fitnessData.find(item => item.date === today);
+          const weight = todayFitnessData?.weight || null;
+          
+          const calculatedBMR = calculateBMR(
+            userData.gender,
+            userData.height,
+            weight,
+            userData.age
+          );
+          setRecommendedDailyCalories(calculatedBMR);
+        }
+      } catch (error) {
+        console.error("사용자 정보 가져오기 실패:", error);
+        setRecommendedDailyCalories(2000);
+      }
+    };
+
+    fetchUserData();
+  }, [uid, fitnessData]);
+
   const getWeekDates = () => {
     const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day;
-    
-    const sunday = new Date(today.setDate(diff));
-    const saturday = new Date(today.setDate(diff + 6));
+    const firstDay = new Date(today);
+    firstDay.setDate(today.getDate() - today.getDay() + 1); // 첫째날(일요일) 계산
+    const lastDay = new Date(firstDay);
+    lastDay.setDate(firstDay.getDate() + 6); // 6일 후(토요일) 계산
 
     const formatDate = (date) => {
       const year = date.getFullYear();
@@ -37,60 +76,10 @@ const Weekly = () => {
     };
 
     return {
-      start: formatDate(sunday),
-      end: formatDate(saturday),
+      start: formatDate(firstDay),
+      end: formatDate(lastDay),
     };
   };
-
-  // 주간 데이터 가져오기
-  useEffect(() => {
-    const shouldFetchNewData = () => {
-      if (!weeklyData || !lastFetched) return true;
-      
-      const now = new Date();
-      const lastFetchDate = new Date(lastFetched);
-      const hoursDiff = (now - lastFetchDate) / (1000 * 60 * 60);
-      
-      // 마지막 fetch로부터 1시간이 지났거나, 날짜가 바뀌었으면 새로 fetch
-      return hoursDiff > 1 || now.getDate() !== lastFetchDate.getDate();
-    };
-
-    const fetchWeeklyData = async () => {
-      if (!uid || !shouldFetchNewData()) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const { start, end } = getWeekDates();
-        const foodsRef = collection(db, 'users', uid, 'foods');
-        const q = query(
-          foodsRef,
-          where('date', '>=', start),
-          where('date', '<=', end)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        const data = [];
-        
-        querySnapshot.forEach((doc) => {
-          const dayData = doc.data();
-          if (dayData) {
-            data.push(dayData);
-          }
-        });
-
-        dispatch(setWeeklyData(data));
-      } catch (error) {
-        console.error('주간 데이터 조회 실패:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWeeklyData();
-  }, [uid, dispatch, weeklyData, lastFetched]);
 
   // 주간 통계 계산
   const calculateWeeklyStats = () => {
@@ -142,7 +131,7 @@ const Weekly = () => {
 
       if (dayTotalCalories > 0) {
         totalCalories += dayTotalCalories;
-        const overCalories = Math.max(0, dayTotalCalories - RECOMMENDED_DAILY_CALORIES);
+        const overCalories = Math.max(0, dayTotalCalories - recommendedDailyCalories);
         totalOverCalories += overCalories;
         dailyCalories[dayData.date] = dayTotalCalories;
       }
@@ -162,7 +151,7 @@ const Weekly = () => {
       .map(([date, calories]) => ({
         date: formatDateLabel(date),
         섭취칼로리: calories,
-        초과칼로리: Math.max(0, calories - RECOMMENDED_DAILY_CALORIES)
+        초과칼로리: Math.max(0, calories - recommendedDailyCalories)
       }));
   };
 
@@ -173,7 +162,7 @@ const Weekly = () => {
       .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
       .map(([date, calories]) => ({
         date: formatDateLabel(date),
-        '칼로리 초과': Math.max(0, calories - RECOMMENDED_DAILY_CALORIES)
+        '칼로리 초과': Math.max(0, calories - recommendedDailyCalories)
       }));
   };
 
@@ -203,14 +192,14 @@ const Weekly = () => {
     return '지방';
   };
 
-  if (loading) {
+  if (fitnessLoading || !weeklyData) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="flex flex-col w-full items-center overflow-y-auto">
-      <Flex justify="start" align="center" className="w-full ml-11 mb-5">
-        <Text className="text-2xl font-bold text-jh-emphasize" style={{ letterSpacing: '1px' }}>
+      <Flex justify="start" align="center" className="w-full pl-7 mb-5">
+        <Text style={{ letterSpacing: '1px', fontFamily: 'Pretendard-700', fontSize: '28px', color: '#5FDD9D'}}>
           주간 칼로리현황
         </Text>
       </Flex>

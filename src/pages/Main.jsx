@@ -75,12 +75,12 @@ const Main = () => {
             onClick={() => handleMealClick('breakfast')}
             disabled={mealFlags.breakfast}
             className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${mealFlags.breakfast ? 'opacity-50 cursor-not-allowed' : ''}`}
-            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700' }}
+            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700', position: 'relative' }}
           >
             아침식사 기록하기
             {mealFlags.breakfast && (
               <CheckCircleTwoTone
-                style={{ position: 'absolute', right: 130, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 36 }}
+                style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', fontSize: 36 }}
               />
             )}
           </Button>
@@ -90,12 +90,12 @@ const Main = () => {
             onClick={() => handleMealClick('lunch')}
             disabled={mealFlags.lunch}
             className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${mealFlags.lunch ? 'opacity-50 cursor-not-allowed' : ''}`}
-            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700' }}
+            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700', position: 'relative' }}
           >
             점심식사 기록하기
             {mealFlags.lunch && (
               <CheckCircleTwoTone
-                style={{ position: 'absolute', right: 130, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 36 }}
+                style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', fontSize: 36 }}
               />
             )}
           </Button>
@@ -105,12 +105,12 @@ const Main = () => {
             onClick={() => handleMealClick('dinner')}
             disabled={mealFlags.dinner}
             className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${mealFlags.dinner ? 'opacity-50 cursor-not-allowed' : ''}`}
-            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700' }}
+            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700', position: 'relative' }}
           >
             저녁식사 기록하기
             {mealFlags.dinner && (
               <CheckCircleTwoTone
-                style={{ position: 'absolute', right: 130, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 36 }}
+                style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', fontSize: 36 }}
               />
             )}
           </Button>
@@ -120,12 +120,12 @@ const Main = () => {
             onClick={() => handleMealClick('snack')}
             disabled={mealFlags.snack}
             className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${mealFlags.snack ? 'opacity-50 cursor-not-allowed' : ''}`}
-            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700' }}
+            style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700', position: 'relative' }}
           >
             간식 기록하기
             {mealFlags.snack && (
               <CheckCircleTwoTone
-                style={{ position: 'absolute', right: 130, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 36 }}
+                style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', fontSize: 36 }}
               />
             )}
           </Button>
