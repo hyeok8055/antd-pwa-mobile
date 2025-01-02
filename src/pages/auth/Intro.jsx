@@ -3,26 +3,43 @@ import { Form, Input, Select, Button, Radio } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseconfig';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { setAuthStatus } from '../../redux/actions/authActions';
 
 const { Option } = Select;
 
 const Intro = () => {
   const navigate = useNavigate();
   const uid = useSelector((state) => state.auth.user?.uid);
+  const dispatch = useDispatch();
   const [form] = Form.useForm();
   const [showCustomGoal, setShowCustomGoal] = useState(false);
 
   const onFinish = async (values) => {
     try {
       const userRef = doc(db, "users", uid);
+      
+      // 최종 목표값 설정
       const finalGoal = values.goal === 'customGoal' ? values.customGoalText : values.goal;
       
-      await updateDoc(userRef, {
+      // Firestore에 저장할 데이터
+      const userData = {
         ...values,
         goal: finalGoal,
         setupCompleted: true
-      });
+      };
+
+      // Firestore 업데이트
+      await updateDoc(userRef, userData);
+
+      // Redux 상태 업데이트
+      dispatch(setAuthStatus({
+        ...userData,
+        uid,
+        setupCompleted: true
+      }));
+
+      // 모든 처리가 완료된 후 메인 페이지로 이동
       navigate('/main');
     } catch (error) {
       console.error("사용자 정보 업데이트 실패:", error);
