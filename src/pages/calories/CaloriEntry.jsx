@@ -197,7 +197,7 @@ const CaloriEntry = () => {
             </div>
             <div style={{
               width: '70%',
-              maxHeight: '120px',
+              minHeight: '240px',
               overflowY: 'auto',
               marginTop: '10px',
               padding: '5px',
@@ -231,7 +231,7 @@ const CaloriEntry = () => {
               backgroundColor: '#5FDD9D',
               borderRadius: '8px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              marginTop: 40,
+              marginTop: 140,
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',

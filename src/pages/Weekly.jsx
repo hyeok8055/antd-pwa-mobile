@@ -192,10 +192,6 @@ const Weekly = () => {
     return '지방';
   };
 
-  if (fitnessLoading || !weeklyData) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="flex flex-col w-full items-center overflow-y-auto">
       <Flex justify="start" align="center" className="w-full pl-7 mb-5">

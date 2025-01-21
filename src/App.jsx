@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useLocation, useNavigate, BrowserRouter } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate, BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
@@ -8,9 +8,12 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
 import { doc, getDoc } from 'firebase/firestore';
+import { Toast } from 'antd-mobile';
+import { requestForToken, onMessageListener } from './firebaseconfig';  
 
 const App = () => {
   const dispatch = useDispatch();
+  const [notification, setNotification] = useState({ title: '', body: '' });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -34,6 +37,66 @@ const App = () => {
 
     return () => unsubscribe();
   }, [dispatch]);
+
+  useEffect(() => {
+    let messageUnsubscribe = null;
+
+    // 알림 권한 요청 및 토큰 설정
+    const setupNotifications = async () => {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        console.log('알림 허용 상태:', permission);
+        
+        if (permission === 'granted') {
+          const token = await requestForToken();
+          if (token) {
+            console.log('FCM 토큰 설정 완료');
+          }
+
+          // 포어그라운드 메시지 수신 처리
+          messageUnsubscribe = onMessageListener()
+            .then((payload) => {
+              console.log('포어그라운드 메시지:', payload);
+              
+              setNotification({
+                title: payload.notification.title,
+                body: payload.notification.body
+              });
+
+              // Toast 알림 표시
+              Toast.show({
+                content: `${payload.notification.title}\n${payload.notification.body}`,
+                duration: 3000,
+                position: 'top'
+              });
+
+              // 네이티브 알림 표시
+              new Notification(payload.notification.title, {
+                body: payload.notification.body,
+                icon: '/logo.png',
+                badge: '/logo.png',
+                data: payload.data
+              });
+            })
+            .catch((err) => console.log('메시지 수신 에러:', err));
+        }
+        if (permission === 'denied') {
+          console.log('알림이 거부되었어요');
+        }
+      } else {
+        console.log('알림이 지원되지 않는 환경입니다');
+      }
+    };
+
+    setupNotifications();
+
+    // cleanup 함수
+    return () => {
+      if (messageUnsubscribe) {
+        messageUnsubscribe();
+      }
+    };
+  }, []);
 
   return (
     <BrowserRouter>
