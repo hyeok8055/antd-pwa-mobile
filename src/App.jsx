@@ -3,13 +3,12 @@ import { useLocation, useNavigate, BrowserRouter, Routes, Route, Navigate } from
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
-import { auth, db } from './firebaseconfig';
+import { auth, db, getFCMToken, onMessageListener } from './firebaseconfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Toast } from 'antd-mobile';
-import { requestForToken, onMessageListener } from './firebaseconfig';  
 
 const App = () => {
   const dispatch = useDispatch();
@@ -41,16 +40,35 @@ const App = () => {
   useEffect(() => {
     let messageUnsubscribe = null;
 
-    // 알림 권한 요청 및 토큰 설정
     const setupNotifications = async () => {
-      if ('Notification' in window) {
-        const permission = await Notification.requestPermission();
-        console.log('알림 허용 상태:', permission);
+      try {
+        if (!('Notification' in window)) {
+          console.log('이 브라우저는 알림을 지원하지 않습니다');
+          return;
+        }
+
+        // 현재 알림 권한 상태 확인
+        let permission = Notification.permission;
         
+        // 권한이 'default' 상태일 때만 권한 요청
+        if (permission === 'default') {
+          permission = await Notification.requestPermission();
+          console.log('알림 권한 요청 결과:', permission);
+        }
+
         if (permission === 'granted') {
-          const token = await requestForToken();
+          console.log('알림이 허용되었습니다');
+          // VAPID 키로 토큰 가져오기
+          const token = await getFCMToken('BBOl7JOGCasgyKCZv1Atq_5MdnvWAWk_iWleIggXfXN3aMGJeuKdEHSTp4OGUfmVPNHwnf5eCLQyY80ITKzz7qk');
+          
           if (token) {
-            console.log('FCM 토큰 설정 완료');
+            console.log('FCM 토큰:', token);
+            // 로그인된 사용자의 경우 토큰을 Firestore에 저장
+            if (auth.currentUser) {
+              await setDoc(doc(db, 'users', auth.currentUser.uid), {
+                fcmToken: token
+              }, { merge: true });
+            }
           }
 
           // 포어그라운드 메시지 수신 처리
@@ -58,39 +76,31 @@ const App = () => {
             .then((payload) => {
               console.log('포어그라운드 메시지:', payload);
               
-              setNotification({
-                title: payload.notification.title,
-                body: payload.notification.body
+              // 알림 표시
+              new Notification(payload.notification.title, {
+                body: payload.notification.body,
+                icon: '/logo.png',
+                badge: '/logo.png'
               });
 
-              // Toast 알림 표시
+              // Toast 알림도 함께 표시
               Toast.show({
                 content: `${payload.notification.title}\n${payload.notification.body}`,
                 duration: 3000,
                 position: 'top'
               });
-
-              // 네이티브 알림 표시
-              new Notification(payload.notification.title, {
-                body: payload.notification.body,
-                icon: '/logo.png',
-                badge: '/logo.png',
-                data: payload.data
-              });
             })
-            .catch((err) => console.log('메시지 수신 에러:', err));
+            .catch((err) => console.error('메시지 수신 에러:', err));
+        } else if (permission === 'denied') {
+          console.log('알림이 차단되었습니다. 브라우저 설정에서 허용해주세요.');
         }
-        if (permission === 'denied') {
-          console.log('알림이 거부되었어요');
-        }
-      } else {
-        console.log('알림이 지원되지 않는 환경입니다');
+      } catch (error) {
+        console.error('알림 설정 중 에러 발생:', error);
       }
     };
 
     setupNotifications();
 
-    // cleanup 함수
     return () => {
       if (messageUnsubscribe) {
         messageUnsubscribe();

@@ -12,6 +12,25 @@ export default defineConfig({
       devOptions: {
         enabled: true
       },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1년
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+      },
       manifest: {
         name: 'Calorie Sync',
         short_name: 'Calorie Sync',
@@ -96,6 +115,7 @@ export default defineConfig({
       workbox: {
         maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정 (필요에 따라 조정)
       },
+      gcm_sender_id: '830533101887' // Firebase Cloud Messaging sender ID
     })
   ],
   resolve: {
@@ -104,6 +124,16 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'esnext', // 최신 ES 문법을 타겟으로 설정
+    target: 'esnext',
+    rollupOptions: {
+      input: {
+        main: './index.html',
+      },
+    },
   },
+  server: {
+    headers: {
+      'Service-Worker-Allowed': '/'
+    }
+  }
 });

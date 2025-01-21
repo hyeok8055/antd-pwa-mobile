@@ -3,9 +3,8 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
-
-// 푸시 알림
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+
 // Firebase configuration using Vite's environment variables
 const firebaseConfig = {
   apiKey: 'AIzaSyBqu5TDSwaY_qvunrS8pJrWdpIlwJeOMrU',
@@ -22,36 +21,33 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 console.log('firebase app initialized:',app);
 
-const messaging = getMessaging(app);
+// 푸시 알림을 위한 messaging 초기화
+let messaging = null;
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  messaging = getMessaging(app);
+}
+
 console.log('firebase messaging initialized:',messaging);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// FCM 토큰 가져오기
-export const requestForToken = async () => {
-  try{
-    const currentToken = await getToken(messaging, {
-      vapidKey: 'DeG9KAoDBVnpcDi1fF10m29qrVW-X7aUcfhlWIR-zFw'
-    });
-    if (currentToken) {
-      console.log('FCM 토큰 가져오기 성공');
-
-      console.log('FCM 토큰 값: ', currentToken);
-
-      // 백엔드로 토큰 전송할 일이 있따면 여기에 추가
-      return currentToken;
-    } else {
-      console.log('토큰을 가져올 수 없습니다');
-    }
+// 토큰 가져오기 함수
+export const getFCMToken = async (vapidKey) => {
+  if (!messaging) return null;
+  try {
+    const token = await getToken(messaging, { vapidKey });
+    return token;
   } catch (error) {
-    console.log('토큰 발급 중 에러 발생', error);
+    console.error('FCM 토큰 가져오기 실패:', error);
+    return null;
   }
-}
+};
 
 // 포어그라운드 메시지 수신 리스너
 export const onMessageListener = () =>
   new Promise((resolve) => {
+    if (!messaging) return;
     onMessage(messaging, (payload) => {
       console.log('메시지 수신:', payload);
       resolve(payload);
@@ -59,3 +55,5 @@ export const onMessageListener = () =>
   });
 
 // const analytics = getAnalytics(app);
+
+export { app, auth, db, messaging };
