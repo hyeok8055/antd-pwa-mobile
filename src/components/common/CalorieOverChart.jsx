@@ -17,7 +17,7 @@ const CalorieOverChart = ({ data }) => {
       .interval()
       .data(data)
       .encode("x", "date")
-      .encode("y", "칼로리 초과")
+      .encode("y", "칼로리초과")
       .axis("y", false)
       .axis("x", { title: null })
       .style("fill", "#da6662");

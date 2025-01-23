@@ -8,7 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Toast } from 'antd-mobile';
+
 
 const App = () => {
   const dispatch = useDispatch();
@@ -81,13 +81,6 @@ const App = () => {
                 body: payload.notification.body,
                 icon: '/logo.png',
                 badge: '/logo.png'
-              });
-
-              // Toast 알림도 함께 표시
-              Toast.show({
-                content: `${payload.notification.title}\n${payload.notification.body}`,
-                duration: 3000,
-                position: 'top'
               });
             })
             .catch((err) => console.error('메시지 수신 에러:', err));

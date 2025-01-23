@@ -56,10 +56,18 @@ const CaloriEntry = () => {
     fetchDetails();
   }, [selectedFoodNames, fetchFoodDetails]);
 
+  // 문자열에서 숫자만 추출하는 헬퍼 함수
+  const extractNumber = (str) => {
+    if (!str) return 100; // 기본값 100
+    const matches = str.match(/\d+/);
+    return matches ? Number(matches[0]) : 100;
+  };
+
   const calculateActualCalories = (foodDetails) => {
     return foodDetails.reduce((total, food) => {
+      const weight = extractNumber(food.weight);
       if (food && food.calories && !food.error) {
-        return total + Number(food.calories);
+        return total + (Number(food.calories) * (weight / 100));
       }
       return total;
     }, 0);
@@ -73,15 +81,27 @@ const CaloriEntry = () => {
       const difference = Math.abs(actualCalories - parseInt(estimatedCalories, 10));
       setCalorieDifference(difference);
 
-      const mappedFoods = foodDetails.map(food => ({
-        name: food.name,
-        calories: food.calories,
-        nutrients: {
-          carbs: food.nutrients?.carbs,
-          fat: food.nutrients?.fat,
-          protein: food.nutrients?.protein
-        }
-      }));
+      const mappedFoods = foodDetails.map(food => {
+        const weight = extractNumber(food.weight);
+        const ratio = weight / 100;
+        
+        // 실제 섭취한 영양성분 계산
+        const actualCalories = food.calories ? Number(food.calories) * ratio : 0;
+        const actualCarbs = food.nutrients?.carbs ? Number(food.nutrients.carbs) * ratio : 0;
+        const actualFat = food.nutrients?.fat ? Number(food.nutrients.fat) * ratio : 0;
+        const actualProtein = food.nutrients?.protein ? Number(food.nutrients.protein) * ratio : 0;
+        
+        return {
+          name: food.name || '',
+          calories: actualCalories,  // 실제 섭취 칼로리
+          weight: weight,
+          nutrients: {
+            carbs: actualCarbs,      // 실제 섭취 탄수화물
+            fat: actualFat,          // 실제 섭취 지방
+            protein: actualProtein    // 실제 섭취 단백질
+          }
+        };
+      });
 
       if (mealType === 'snacks') {
         const today = getTodayDate();
@@ -148,8 +168,8 @@ const CaloriEntry = () => {
     }
   }, [saveSuccess, navigate]);
 
-  const handleInputChange = (e) => {
-    setEstimatedCalories(e.target.value);
+  const handleInputChange = (value) => {
+    setEstimatedCalories(value);
   };
 
   return (
@@ -197,7 +217,7 @@ const CaloriEntry = () => {
             </div>
             <div style={{
               width: '70%',
-              minHeight: '240px',
+              maxHeight: '240px',
               overflowY: 'auto',
               marginTop: '10px',
               padding: '5px',
@@ -207,15 +227,8 @@ const CaloriEntry = () => {
             }}>
               <List
                 dataSource={selectedFoodNames}
-                renderItem={(item, index) => (
-                  <List.Item style={{ display: 'flex', alignItems: 'center' }}>
-                    <Image
-                      width={20}
-                      height={20}
-                      style={{ marginRight: 8 }}
-                      src={noImage}
-                      preview={false}
-                    />
+                renderItem={(item) => (
+                  <List.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontSize: '15px', fontFamily: 'Pretendard-600' }}>
                       {item}
                     </Text>
@@ -274,7 +287,7 @@ const CaloriEntry = () => {
             onClick={handleClick}
             disabled={loading}
           >
-            <Text style={{ color: 'white', fontSize: '18px', fontFamily: 'Pretendard-700' }}>결과 기록하기</Text>
+            <Text style={{ color: 'black', fontSize: '18px', fontFamily: 'Pretendard-700' }}>결과 기록하기</Text>
           </Button>
           {/* {showStats && ( // 주석 처리 */}
           {/*  <div */}

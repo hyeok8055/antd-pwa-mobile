@@ -1,206 +1,221 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Typography, Flex, Row, Col } from 'antd';
-import { BankOutlined, FireOutlined } from '@ant-design/icons';
+import { BankOutlined, FireOutlined, LoadingOutlined } from '@ant-design/icons';
 import CalorieOverChart from '@/components/common/CalorieOverChart.jsx';
 import G2BarChart from '@/components/common/G2BarChart.jsx';
 import NutrientPiechart from '@/components/common/NutrientPiechart.jsx';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { db } from '@/firebaseconfig';
-import { doc, getDoc } from 'firebase/firestore';
-import { useFitness } from '@/hook/useFitness';
+import { doc, getDoc, collection, query, orderBy, limit, setDoc, getDocs } from 'firebase/firestore';
+import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
 const Weekly = () => {
-  const dispatch = useDispatch();
   const uid = useSelector((state) => state.auth.user?.uid);
-  const { weeklyData } = useSelector((state) => state.weekly);
-  const [user, setUser] = useState(null);
   const [recommendedDailyCalories, setRecommendedDailyCalories] = useState(null);
-  const { fitnessData, loading: fitnessLoading } = useFitness(uid);
+  const [loading, setLoading] = useState(false);
+  const [weeklyStats, setWeeklyStats] = useState({
+    totalCalories: 0,
+    totalDeficit: 0,
+    dailyData: []
+  });
 
   const calculateBMR = (gender, height, weight, age) => {
     let bmr = 0;
     if (gender === 'male') {
-      bmr = 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
+      bmr = 66 + (13.7 * (weight || 70)) + (5 * height) - (6.8 * age);
     } else if (gender === 'female') {
-      bmr = 655 + (9.6 * weight) + (1.85 * height) - (4.7 * age);
+      bmr = 655 + (9.6 * (weight || 60)) + (1.85 * height) - (4.7 * age);
     }
-    // console.log(bmr);
     return Math.round(bmr);
   };
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (!uid) return;
-      
+      setLoading(true);
+
       try {
-        const userDoc = await getDoc(doc(db, "users", uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUser(userData);
-          
-          const today = new Date().toISOString().split('T')[0];
-          const todayFitnessData = fitnessData.find(item => item.date === today);
-          const weight = todayFitnessData?.weight || null;
-          
-          const calculatedBMR = calculateBMR(
-            userData.gender,
-            userData.height,
-            weight,
-            userData.age
-          );
-          setRecommendedDailyCalories(calculatedBMR);
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (!userDoc.exists()) {
+          console.log('No user data found');
+          return;
         }
+        const userData = userDoc.data();
+        const { gender, height, age } = userData;
+
+        const fitnessQuery = query(
+          collection(db, 'users', uid, 'fitness'),
+          orderBy('date', 'desc'),
+          limit(1)
+        );
+        const fitnessSnapshot = await getDocs(fitnessQuery);
+        let weight = null;
+        if (!fitnessSnapshot.empty) {
+          weight = fitnessSnapshot.docs[0].data().weight;
+        }
+
+        const bmr = calculateBMR(gender, height, weight, age);
+        setRecommendedDailyCalories(bmr);
+
+        // 오늘 날짜의 데이터 확인 및 생성
+        const today = dayjs().format('YYYY-MM-DD');
+        const todayDocRef = doc(db, 'users', uid, 'weekly', today);
+        const todayDoc = await getDoc(todayDocRef);
+
+        if (!todayDoc.exists()) {
+          // 오늘의 foods 문서 가져오기
+          const foodsDocRef = doc(db, 'users', uid, 'foods', today);
+          const foodsDoc = await getDoc(foodsDocRef);
+
+          if (foodsDoc.exists()) {
+            const foodsData = foodsDoc.data();
+            
+            // 총 칼로리 계산 (breakfast, lunch, dinner, snacks의 actualCalories 합)
+            const totalCalories = [
+              foodsData.breakfast?.actualCalories || 0,
+              foodsData.lunch?.actualCalories || 0,
+              foodsData.dinner?.actualCalories || 0,
+              foodsData.snacks?.actualCalories || 0
+            ].reduce((sum, cal) => sum + cal, 0);
+
+            // 총 영양소 계산
+            const mealTypes = ['breakfast', 'lunch', 'dinner', 'snacks'];
+            const totalNutrients = mealTypes.reduce((acc, mealType) => {
+              const foods = foodsData[mealType]?.foods || [];
+              foods.forEach(food => {
+                if (food.nutrients) {
+                  acc.totalCarbs += food.nutrients.carbs || 0;
+                  acc.totalProtein += food.nutrients.protein || 0;
+                  acc.totalFat += food.nutrients.fat || 0;
+                }
+              });
+              return acc;
+            }, {
+              totalCarbs: 0,
+              totalProtein: 0,
+              totalFat: 0
+            });
+
+            // 칼로리 초과량 계산
+            const calorieDeficit = Math.max(0, totalCalories - bmr);
+
+            // 새로운 weekly 문서 생성
+            const newDayData = {
+              bmr,
+              calorieDeficit,
+              totalCalories,
+              ...totalNutrients
+            };
+
+            await setDoc(todayDocRef, newDayData);
+          }
+        }
+
+        // 이번 주의 데이터 가져오기
+        const startOfWeek = dayjs().startOf('week');
+        const weeklyData = [];
+        
+        // 일주일 전체 데이터 준비 (없는 날은 0으로 초기화)
+        for (let i = 0; i < 7; i++) {
+          const currentDate = startOfWeek.add(i, 'day').format('YYYY-MM-DD');
+          const weeklyDocRef = doc(db, 'users', uid, 'weekly', currentDate);
+          const weeklyDoc = await getDoc(weeklyDocRef);
+          
+          if (weeklyDoc.exists()) {
+            weeklyData.push({
+              date: currentDate,
+              ...weeklyDoc.data()
+            });
+          } else {
+            // 데이터가 없는 날은 0으로 초기화된 더미 데이터 추가
+            weeklyData.push({
+              date: currentDate,
+              totalCalories: 0,
+              calorieDeficit: 0,
+              totalCarbs: 0,
+              totalProtein: 0,
+              totalFat: 0
+            });
+          }
+        }
+
+        // 주간 통계 계산 (실제 데이터가 있는 날만 합산)
+        const stats = {
+          totalCalories: weeklyData.reduce((sum, day) => sum + (day.totalCalories || 0), 0),
+          totalDeficit: weeklyData.reduce((sum, day) => sum + (day.calorieDeficit || 0), 0),
+          dailyData: weeklyData
+        };
+        
+        setWeeklyStats(stats);
       } catch (error) {
-        console.error("사용자 정보 가져오기 실패:", error);
-        setRecommendedDailyCalories(2000);
+        console.error('Error fetching/creating user data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchUserData();
-  }, [uid, fitnessData]);
+  }, [uid]);
 
-  const getWeekDates = () => {
-    const today = new Date();
-    const firstDay = new Date(today);
-    firstDay.setDate(today.getDate() - today.getDay() + 1); // 첫째날(일요일) 계산
-    const lastDay = new Date(firstDay);
-    lastDay.setDate(firstDay.getDate() + 6); // 6일 후(토요일) 계산
-
-    const formatDate = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    return {
-      start: formatDate(firstDay),
-      end: formatDate(lastDay),
-    };
-  };
-
-  // 주간 통계 계산
-  const calculateWeeklyStats = () => {
-    if (!weeklyData) {
-      return {
-        totalCalories: 0,
-        totalOverCalories: 0,
-        dailyCalories: {},
-        nutrientTotals: { carbs: 0, protein: 0, fat: 0 }
-      };
-    }
-
-    const { start } = getWeekDates();
-    const startDate = new Date(start);
-    const dailyCalories = {};
-    
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
-      const formattedDate = currentDate.toISOString().split('T')[0];
-      dailyCalories[formattedDate] = 0;
-    }
-
-    let totalCalories = 0;
-    let totalOverCalories = 0;
-    const nutrientTotals = { carbs: 0, protein: 0, fat: 0 };
-
-    weeklyData.forEach(dayData => {
-      if (!dayData.date) return;
-      
-      const meals = ['breakfast', 'lunch', 'dinner', 'snacks'];
-      let dayTotalCalories = 0;
-
-      meals.forEach(meal => {
-        if (dayData[meal] && dayData[meal].actualCalories) {
-          dayTotalCalories += dayData[meal].actualCalories;
-          
-          if (dayData[meal].foods) {
-            dayData[meal].foods.forEach(food => {
-              if (food.nutrients) {
-                nutrientTotals.carbs += food.nutrients.carbs || 0;
-                nutrientTotals.protein += food.nutrients.protein || 0;
-                nutrientTotals.fat += food.nutrients.fat || 0;
-              }
-            });
-          }
-        }
-      });
-
-      if (dayTotalCalories > 0) {
-        totalCalories += dayTotalCalories;
-        const overCalories = Math.max(0, dayTotalCalories - recommendedDailyCalories);
-        totalOverCalories += overCalories;
-        dailyCalories[dayData.date] = dayTotalCalories;
-      }
-    });
-
-    return { totalCalories, totalOverCalories, dailyCalories, nutrientTotals };
-  };
-
-  const { totalCalories, totalOverCalories, dailyCalories, nutrientTotals } = calculateWeeklyStats();
-
-  // 차트 데이터는 존재하는 데이터만 포함
   const getBarChartData = () => {
-    if (!dailyCalories) return [];
-    
-    return Object.entries(dailyCalories)
-      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-      .map(([date, calories]) => ({
-        date: formatDateLabel(date),
-        섭취칼로리: calories,
-        초과칼로리: Math.max(0, calories - recommendedDailyCalories)
-      }));
+    return weeklyStats.dailyData.map(day => ({
+      date: dayjs(day.date).format('MM/DD'),
+      섭취칼로리: day.totalCalories
+    }));
   };
 
   const getCalorieOverChartData = () => {
-    if (!dailyCalories) return [];
-    
-    return Object.entries(dailyCalories)
-      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-      .map(([date, calories]) => ({
-        date: formatDateLabel(date),
-        '칼로리 초과': Math.max(0, calories - recommendedDailyCalories)
-      }));
-  };
-
-  // 날짜 포맷 함수 추가
-  const formatDateLabel = (dateString) => {
-    const date = new Date(dateString);
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    return days[date.getDay()];
+    return weeklyStats.dailyData.map(day => ({
+      date: dayjs(day.date).format('MM/DD'),
+      칼로리초과: Math.max(0, day.calorieDeficit)
+    }));
   };
 
   const getNutrientPieChartData = () => {
-    const { carbs, protein, fat } = nutrientTotals;
-    const total = carbs + protein + fat;
-    if (total === 0) return [];
-    
+    const totals = weeklyStats.dailyData.reduce((acc, day) => ({
+      carbs: acc.carbs + day.totalCarbs,
+      protein: acc.protein + day.totalProtein,
+      fat: acc.fat + day.totalFat
+    }), { carbs: 0, protein: 0, fat: 0 });
+
+    if (totals.carbs === 0 && totals.protein === 0 && totals.fat === 0) return [];
+
     return [
-      { item: '탄수화물', count: carbs },
-      { item: '단백질', count: protein },
-      { item: '지방', count: fat }
+      { type: '탄수화물', value: parseFloat(totals.carbs.toFixed(2)) },
+      { type: '단백질', value: parseFloat(totals.protein.toFixed(2)) },
+      { type: '지방', value: parseFloat(totals.fat.toFixed(2)) }
     ];
   };
 
   const getTopNutrient = () => {
-    const { carbs, protein, fat } = nutrientTotals;
-    if (carbs >= protein && carbs >= fat) return '탄수화물';
-    if (protein >= carbs && protein >= fat) return '단백질';
-    return '지방';
+    const totals = weeklyStats.dailyData.reduce((acc, day) => ({
+      carbs: acc.carbs + day.totalCarbs,
+      protein: acc.protein + day.totalProtein,
+      fat: acc.fat + day.totalFat
+    }), { carbs: 0, protein: 0, fat: 0 });
+
+    const { carbs, protein, fat } = totals;
+    if (carbs > protein && carbs > fat) {
+      return '탄수화물';
+    } else if (protein > carbs && protein > fat) {
+      return '단백질';
+    } else if (fat > carbs && fat > protein) {
+      return '지방';
+    } else {
+      return '균형';
+    }
   };
 
   return (
-    <div className="flex flex-col w-full items-center overflow-y-auto">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <Flex justify="start" align="center" className="w-full pl-7 mb-5">
         <Text style={{ letterSpacing: '1px', fontFamily: 'Pretendard-700', fontSize: '28px', color: '#5FDD9D'}}>
           주간 칼로리현황
         </Text>
       </Flex>
-
-      <Row gutter={[16, 16]} className="h-[7%] justify-center w-full mb-1">
+      <Row justify="space-between" style={{ width: '90%', marginBottom: '10px' }}>
         <Col span={11}>
           <Card
             bordered
@@ -216,8 +231,8 @@ const Weekly = () => {
                 <FireOutlined style={{ color: '#5FDD9D' }} />
               </Col>
             </Row>
-            <Text className="text-lg font-semibold text-jh-emphasize">
-              {Math.round(totalCalories)} kcal
+            <Text className="text-lg font-semibold text-[#5FDD9D]">
+              {Math.round(weeklyStats.totalCalories)} kcal
             </Text>
           </Card>
         </Col>
@@ -237,7 +252,7 @@ const Weekly = () => {
               </Col>
             </Row>
             <Text className="text-lg font-semibold text-jh-red">
-              {Math.round(totalOverCalories)} kcal
+              {Math.round(weeklyStats.totalDeficit)} kcal
             </Text>
           </Card>
         </Col>
@@ -253,7 +268,7 @@ const Weekly = () => {
           </Col>
           <Col span={24}>
             <Text className="text-base font-medium text-[#5FDD9D]">
-              {Math.round(totalCalories)}kcal
+              {Math.round(weeklyStats.totalCalories)} kcal
             </Text>
           </Col>
         </Row>
@@ -274,7 +289,7 @@ const Weekly = () => {
           </Col>
           <Col span={24}>
             <Text className="text-base font-medium text-jh-red">
-              {Math.round(totalOverCalories)}kcal
+              {Math.round(weeklyStats.totalDeficit)} kcal
             </Text>
           </Col>
           <Col span={24}>

@@ -3,7 +3,6 @@ import { PieChart } from "@mui/x-charts/PieChart";
 
 export default function NutrientPiechart({ data }) {
   if (!data || data.length === 0) return null;
-
   return (
     <PieChart
       margin={{ top: 0, bottom: 0, left: 0, right: 60 }}
@@ -11,8 +10,8 @@ export default function NutrientPiechart({ data }) {
         {
           data: data.map((item, index) => ({
             id: index,
-            value: item.count,
-            label: item.item,
+            value: item.value,
+            label: item.type,
           })),
           innerRadius: 0,
           paddingAngle: 1,

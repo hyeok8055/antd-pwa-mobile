@@ -59,31 +59,30 @@ export const useFood = () => {
         const today = getTodayDate();
         const docRef = doc(db, 'users', uid, 'foods', today);
 
-        // // 저장할 데이터 로깅
-        // console.log('저장할 데이터:', {
-        //   mealType,
-        //   foods,
-        //   estimatedCalories,
-        //   actualCalories,
-        //   selectedFoods,
-        //   flag
-        // });
-
         const docSnap = await getDoc(docRef);
         let currentData = docSnap.exists() ? docSnap.data() : {
           date: today,
         };
 
+        // 데이터 유효성 검사 및 기본값 설정
+        const validFoods = (foods || []).map(food => ({
+          name: food.name || '',
+          calories: Number(food.calories || 0),
+          weight: Number(food.weight || 0),
+          nutrients: {
+            carbs: Number(food.nutrients?.carbs || 0),
+            fat: Number(food.nutrients?.fat || 0),
+            protein: Number(food.nutrients?.protein || 0)
+          }
+        })).filter(food => food.name);
+
         currentData[mealType] = {
-          flag: mealType !== 'snacks' ? flag : currentData[mealType]?.flag || 0,
-          foods: foods,
+          flag: mealType !== 'snacks' ? Number(flag) : Number(currentData[mealType]?.flag || 0),
+          foods: validFoods,
           estimatedCalories: estimatedCalories !== null ? Number(estimatedCalories) : null,
           actualCalories: actualCalories !== null ? Number(actualCalories) : null,
-          selectedFoods: selectedFoods,
+          selectedFoods: selectedFoods || [],
         };
-
-        // 최종 저장될 데이터 로깅
-        console.log('최종 데이터:', currentData);
 
         await setDoc(docRef, currentData, { merge: true });
         setFoodData(currentData);

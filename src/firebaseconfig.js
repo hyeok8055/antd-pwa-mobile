@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // Firebase configuration using Vite's environment variables
@@ -31,6 +32,7 @@ console.log('firebase messaging initialized:',messaging);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
+const realtimeDb = getDatabase(app);
 
 // 토큰 가져오기 함수
 export const getFCMToken = async (vapidKey) => {
@@ -56,4 +58,4 @@ export const onMessageListener = () =>
 
 // const analytics = getAnalytics(app);
 
-export { app, auth, db, messaging };
+export { app, auth, db, realtimeDb, messaging };
