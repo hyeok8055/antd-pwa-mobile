@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Row, Col, Button } from 'antd';
+import { Modal, Space } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { useSelector } from 'react-redux';
 import { useFood } from '@/hook/useFood';
+import { useModal } from '@/hook/useModal';
+
 import { CheckCircleTwoTone } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -31,6 +34,8 @@ const Main = () => {
       });
     }
   }, [foodData]);
+
+  useModal(foodData);
 
   if (loading) {
     return <div>Loading...</div>;
