@@ -308,7 +308,7 @@ const Meal = () => {
             value={searchTerm}
             size="large"
             onChange={handleSearchChange}
-            style={{ width: '100%'}}
+            style={{ width: '100%', height: '40px' }}
           />
           <Row justify="end" style={{ marginTop: 10 }}>
             <Button onClick={handleAddFoodClick} icon={<PlusOutlined />} style={{ fontFamily: 'Pretendard-700'}}>
