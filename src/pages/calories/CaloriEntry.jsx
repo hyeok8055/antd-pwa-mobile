@@ -159,7 +159,7 @@ const CaloriEntry = () => {
 
       const redirectTimeout = setTimeout(() => {
         navigate('/');
-      }, 5000);
+      }, 3000);
 
       return () => {
         clearInterval(timer);
@@ -251,11 +251,11 @@ const CaloriEntry = () => {
             }}
           >
             <Text style={{ fontSize: '16px', fontFamily: 'Pretendard-500' }}>
-              몇 칼로리를 섭취한 것 같나요?
+              선택한 모든 음식의 총 칼로리는?
             </Text>
           </div>
           <InputNumber
-            placeholder="예상 칼로리 입력"
+            placeholder="총 예상 칼로리 입력"
             suffix="Kcal"
             value={estimatedCalories}
             onChange={handleInputChange}
@@ -275,6 +275,16 @@ const CaloriEntry = () => {
               paddingRight: 10,
             }}
           />
+          <Text style={{ 
+            fontSize: '14px', 
+            color: '#888', 
+            fontFamily: 'Pretendard-400',
+            marginTop: 8,
+            width: '70%',
+            textAlign: 'center'
+          }}>
+            위에 선택한 모든 음식을 합한<br /> 총 칼로리를 입력해주세요
+          </Text>
           <Button
             style={{
               height: '50px',

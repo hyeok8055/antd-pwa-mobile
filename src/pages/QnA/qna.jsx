@@ -1,12 +1,54 @@
 import React, { useState } from 'react';
 import { Collapse, SearchBar, Tabs } from 'antd-mobile';
 import './qna.css';
+import { Typography } from 'antd';
+const { Text } = Typography;
 
 const QnA = () => {
   const [searchText, setSearchText] = useState('');
   
   // QnA 데이터를 카테고리별로 구성
   const qnaCategories = {
+    app: {
+      title: '앱 사용법',
+      items: [
+        {
+          key: 'a1',
+          title: '이 앱은 어떤 기능을 제공하나요?',
+          content: '칼로리 싱크는 식단 관리, 운동 기록, 체중 추적, BMI 계산 등을 제공하는 종합 건강 관리 앱입니다. 매일의 식사를 기록하고 칼로리를 추적하며, 운동 활동을 기록하고 건강 목표를 향해 나아갈 수 있도록 도와줍니다.'
+        },
+        {
+          key: 'a2',
+          title: '식단 기록은 어떻게 하나요?',
+          content: '메인 화면에서 아침, 점심, 저녁, 간식 중 기록하고 싶은 식사를 선택하세요. 음식을 검색하거나 직접 입력할 수 있으며, 예상 칼로리와 실제 섭취 칼로리를 기록할 수 있습니다. 기록된 데이터는 당신의 건강 관리에 도움이 됩니다.'
+        },
+        {
+          key: 'a3',
+          title: '운동 기록은 어떻게 관리되나요?',
+          content: '피트니스 페이지에서 오늘의 체중을 입력하고 운동 종목과 시간을 추가할 수 있습니다. 다양한 운동 종목 중에서 선택하거나 검색할 수 있으며, 각 운동별로 소요 시간을 기록할 수 있습니다. 기록된 운동 데이터는 저장되어 건강 관리에 활용됩니다.'
+        },
+        {
+          key: 'a4',
+          title: '내 BMI는 어떻게 확인하나요?',
+          content: '피트니스 페이지에서 체중을 입력하면 자동으로 BMI가 계산됩니다. 키 정보는 프로필 설정에서 입력할 수 있으며, 변경이 필요한 경우 BMI 차트 옆의 설정 아이콘을 통해 수정할 수 있습니다. BMI 차트는 저체중, 정상, 과체중, 비만, 고도비만 등의 범주를 시각적으로 보여줍니다.'
+        },
+        {
+          key: 'a5',
+          title: '음식 추가는 어떻게 하나요?',
+          content: '식사 목록 화면에서 우측 상단의 \'음식추가하기\' 버튼을 클릭하면 새로운 음식을 추가할 수 있습니다. 음식 이름, 중량, 칼로리, 영양소(탄수화물, 단백질, 지방) 정보를 입력하면 됩니다. 추가한 음식은 다음 검색 시 바로 선택할 수 있습니다.'
+        },
+        {
+          key: 'a6',
+          title: '개인 정보는 어떻게 수정하나요?',
+          content: '화면 상단의 설정 아이콘을 클릭하면 사이드 팝업이 열립니다. 여기서 키, 성별, 나이, 활동 수준, 목표 등의 개인 정보를 확인하고 수정할 수 있습니다. 수정 버튼을 클릭하여 편집 모드로 전환한 후 정보를 업데이트하고 저장할 수 있습니다.'
+        },
+        {
+          key: 'a7',
+          title: '알림 기능은 어떻게 작동하나요?',
+          content: '앱은 식사 시간대에 따라 칼로리 섭취 결과를 알려주는 알림 기능을 제공합니다. 아침, 점심, 저녁 식사 후 다음 식사 시간대에 이전 식사의 예상 칼로리와 실제 칼로리 차이를 알려주어 식습관 개선에 도움을 줍니다. 알림을 받으려면 브라우저의 알림 권한을 허용해야 합니다.'
+        }
+      ]
+    },
     diet: {
       title: '다이어트',
       items: [
@@ -112,7 +154,9 @@ const QnA = () => {
 
   return (
     <div className="qna-container">
-      <h1 className="qna-title">자주 묻는 질문</h1>
+      <Text style={{ fontSize: '28px', fontFamily: 'Pretendard-800', letterSpacing: '1px', marginBottom: 15, textAlign: 'center' }}>
+        자주 묻는 질문
+      </Text>
       
       <div className="qna-search-section">
         <SearchBar
@@ -160,13 +204,13 @@ const QnA = () => {
       )}
 
       <div className="qna-contact-section">
-        <h2 className="qna-subtitle">다른 질문이 있으신가요?</h2>
         <p className="qna-contact">
           더 궁금한 점이 있으시면 언제든지 문의해주세요.
           <br />
           이메일: support@healthapp.com
         </p>
       </div>
+      <div className='h-[7%]'></div>
     </div>
   );
 };

@@ -63,6 +63,18 @@ const Meal = () => {
         result = result.filter(item => item.country === selectedCountry);
       }
 
+      // 검색어와 정확히 일치하는 항목을 찾아 맨 앞으로 정렬
+      if (searchTerm) {
+        result.sort((a, b) => {
+          const aExactMatch = a.name.toLowerCase() === searchTerm.toLowerCase();
+          const bExactMatch = b.name.toLowerCase() === searchTerm.toLowerCase();
+          
+          if (aExactMatch && !bExactMatch) return -1;
+          if (!aExactMatch && bExactMatch) return 1;
+          return 0;
+        });
+      }
+
       setFilteredFood(result);
     }
   }, [searchTerm, selectedCountry, foods]);
