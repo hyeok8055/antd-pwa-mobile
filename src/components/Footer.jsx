@@ -5,6 +5,7 @@ import {
   EditFill,
   CalendarOutline,
   HeartFill,
+  QuestionCircleOutline,
 } from 'antd-mobile-icons';
 
 const Footer = () => {
@@ -19,7 +20,7 @@ const Footer = () => {
   const tabs = [
     { key: '/main', title: '식사 기록', icon: <EditFill /> },
     { key: '/fitness', title: '건강 일지', icon: <HeartFill /> },
-    { key: '/weekly', title: '주간 현황', icon: <CalendarOutline /> },
+    { key: '/qna', title: 'QnA', icon: <QuestionCircleOutline /> },
   ];
 
   return (

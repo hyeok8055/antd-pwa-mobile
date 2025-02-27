@@ -2,12 +2,13 @@ import React from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import Main from "./pages/Main";
 import Fitness from "./pages/fitness/Fitness";
-import Weekly from "./pages/Weekly";
+// import Weekly from "./pages/Weekly";
 import GoogleLogin from "./pages/auth/GoogleLogin";
 import { useSelector } from 'react-redux';
 import FoodList from "./pages/food/FoodList";
 import CaloriEntry from "./pages/calories/CaloriEntry";
 import Intro from "./pages/auth/Intro";
+import QnA from "./pages/QnA/qna";
 
 const AppRoutes = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -25,10 +26,11 @@ const AppRoutes = () => {
         <>
           <Route path="/main" element={<Main />} />
           <Route path="/fitness" element={<Fitness />} />
-          <Route path="/weekly" element={<Weekly />} />
+          {/* <Route path="/weekly" element={<Weekly />} /> */}
           <Route path="/meals/:mealType" element={<FoodList />} />
           <Route path="/calories/calorieEntry" element={<CaloriEntry />} />
           <Route path="/intro" element={<Intro />} />
+          <Route path="/qna" element={<QnA />} />
           <Route path="*" element={<Navigate to="/main" />} />
         </>
       ) : (
