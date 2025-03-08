@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux';
 import { useFood } from '@/hook/useFood';
 import { useModal } from '@/hook/useModal';
 
-import { CheckCircleTwoTone } from '@ant-design/icons';
+import { CheckCircleTwoTone, ClockCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -17,6 +17,12 @@ const Main = () => {
   const uid = useSelector((state) => state.auth.user?.uid);
   const { foodData, loading, error } = useFood(uid);
   const [mealFlags, setMealFlags] = useState({
+    breakfast: false,
+    lunch: false,
+    dinner: false,
+    snack: false,
+  });
+  const [timeRestrictions, setTimeRestrictions] = useState({
     breakfast: false,
     lunch: false,
     dinner: false,
@@ -35,6 +41,38 @@ const Main = () => {
     }
   }, [foodData]);
 
+  // 시간 제한 확인을 위한 useEffect
+  useEffect(() => {
+    const checkTimeRestrictions = () => {
+      const currentHour = new Date().getHours(); // 24시간 형식 (0-23)
+      console.log('현재 시간(시, 24시간 형식):', currentHour);
+      
+      // 시간 제한 로직 (24시간 형식 기준)
+      // 아침식사: 11시(오전 11시) 이후 제한
+      // 점심식사: 17시(오후 5시) 이후 제한
+      // 저녁식사: 7시(오전 7시)부터 19시(오후 7시) 사이 제한
+      const isDinnerRestricted = currentHour >= 7 && currentHour < 19;
+      
+      setTimeRestrictions({
+        breakfast: currentHour >= 11, // 11시(오전 11시) 이후 아침식사 제한
+        lunch: currentHour >= 17, // 17시(오후 5시) 이후 점심식사 제한
+        dinner: isDinnerRestricted, // 7시(오전 7시)부터 19시(오후 7시) 사이 저녁식사 제한
+        snack: false, // 간식은 제한 없음
+      });
+      console.log('시간 제한 상태:', {
+        breakfast: currentHour >= 11,
+        lunch: currentHour >= 17,
+        dinner: isDinnerRestricted,
+        snack: false
+      });
+    };
+
+    checkTimeRestrictions();
+    const intervalId = setInterval(checkTimeRestrictions, 60000); // 1분마다 시간 제한 확인
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   useModal(foodData);
 
   if (loading) {
@@ -47,6 +85,20 @@ const Main = () => {
 
   const handleMealClick = (mealType) => {
     navigate(`/meals/${mealType}`);
+  };
+
+  // 시간 제한 메시지 반환 함수
+  const getTimeRestrictionMessage = (mealType) => {
+    switch (mealType) {
+      case 'breakfast':
+        return '11시(오전 11시) 이후에는 기록할 수 없습니다';
+      case 'lunch':
+        return '17시(오후 5시) 이후에는 기록할 수 없습니다';
+      case 'dinner':
+        return '7시(오전 7시)부터 19시(오후 7시) 사이에는 기록할 수 없습니다';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -78,8 +130,8 @@ const Main = () => {
         <Col span={20}>
           <Button
             onClick={() => handleMealClick('breakfast')}
-            disabled={mealFlags.breakfast}
-            className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${mealFlags.breakfast ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={mealFlags.breakfast || timeRestrictions.breakfast}
+            className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${(mealFlags.breakfast || timeRestrictions.breakfast) ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700', position: 'relative' }}
           >
             아침식사 기록하기
@@ -88,13 +140,19 @@ const Main = () => {
                 style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', fontSize: 36 }}
               />
             )}
+            {!mealFlags.breakfast && timeRestrictions.breakfast && (
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <ClockCircleOutlined style={{ fontSize: 24, color: '#ff4d4f' }} />
+                <Text style={{ fontSize: '12px', color: '#ff4d4f' }}>{getTimeRestrictionMessage('breakfast')}</Text>
+              </div>
+            )}
           </Button>
         </Col>
         <Col span={20}>
           <Button
             onClick={() => handleMealClick('lunch')}
-            disabled={mealFlags.lunch}
-            className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${mealFlags.lunch ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={mealFlags.lunch || timeRestrictions.lunch}
+            className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${(mealFlags.lunch || timeRestrictions.lunch) ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700', position: 'relative' }}
           >
             점심식사 기록하기
@@ -103,13 +161,19 @@ const Main = () => {
                 style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', fontSize: 36 }}
               />
             )}
+            {!mealFlags.lunch && timeRestrictions.lunch && (
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <ClockCircleOutlined style={{ fontSize: 24, color: '#ff4d4f' }} />
+                <Text style={{ fontSize: '12px', color: '#ff4d4f' }}>{getTimeRestrictionMessage('lunch')}</Text>
+              </div>
+            )}
           </Button>
         </Col>
         <Col span={20}>
           <Button
             onClick={() => handleMealClick('dinner')}
-            disabled={mealFlags.dinner}
-            className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${mealFlags.dinner ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={mealFlags.dinner || timeRestrictions.dinner}
+            className={`w-full bg-bg1 rounded-xl shadow-md p-0 relative ${(mealFlags.dinner || timeRestrictions.dinner) ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ height: '60px', textAlign: 'left', fontFamily: 'Pretendard-700', position: 'relative' }}
           >
             저녁식사 기록하기
@@ -117,6 +181,12 @@ const Main = () => {
               <CheckCircleTwoTone
                 style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', fontSize: 36 }}
               />
+            )}
+            {!mealFlags.dinner && timeRestrictions.dinner && (
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <ClockCircleOutlined style={{ fontSize: 24, color: '#ff4d4f' }} />
+                <Text style={{ fontSize: '12px', color: '#ff4d4f' }}>{getTimeRestrictionMessage('dinner')}</Text>
+              </div>
             )}
           </Button>
         </Col>

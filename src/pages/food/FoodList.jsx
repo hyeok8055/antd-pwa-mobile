@@ -30,13 +30,14 @@ const Meal = () => {
       protein: null,
       fat: null,
     },
+    weight: '',
   });
   const dispatch = useDispatch();
   const foods = useSelector((state) => state.food.foods);
   const listRef = useRef(null);
   const containerRef = useRef(null);
   const [listHeight, setListHeight] = useState(400);
-  const [weightUnit, setWeightUnit] = useState('g');
+  const [weightUnit, setWeightUnit] = useState('인분');
 
   useEffect(() => {
     const foodsRef = ref(realtimeDb, 'foods');
@@ -132,21 +133,13 @@ const Meal = () => {
         protein: null,
         fat: null,
       },
+      weight: '',
     });
   };
 
   const handleInputChange = (e, name) => {
-
     if (name === 'weight') {
       setNewFood({ ...newFood, weight: e.target.value });
-    } else if (name.startsWith('nutrients.')) {
-      const nutrientKey = name.split('.')[1];
-      setNewFood({
-        ...newFood,
-        nutrients: { ...newFood.nutrients, [nutrientKey]: e },
-      });
-    } else if (name === 'calories') {
-      setNewFood({ ...newFood, [name]: e });
     } else {
       setNewFood({ ...newFood, [name]: e.target ? e.target.value : e });
     }
@@ -160,21 +153,73 @@ const Meal = () => {
     try {
       const userEmail = auth.currentUser?.email || 'default';
       const sanitizedEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_');
-      const foodKey = `${newFood.name}_${sanitizedEmail}`;
+      
+      // 현재 시간을 yyyy-mm-dd-hh 형식으로 포맷팅
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = String(now.getHours()).padStart(2, '0');
+      const timestamp = `${year}-${month}-${day}-${hour}`;
+      
+      // 음식이름_이메일_{작성시간} 형식으로 foodKey 생성
+      const foodKey = `${newFood.name}_${sanitizedEmail}_${timestamp}`;
+      
       const foodsRef = ref(realtimeDb, `foods/${foodKey}`);
       const weightWithUnit = `${newFood.weight}${weightUnit}`;
-      await set(foodsRef, { ...newFood, weight: weightWithUnit });
+      
+      // 서버로 전송할 때 영양소 정보를 null로 설정
+      const foodData = { 
+        ...newFood, 
+        weight: weightWithUnit,
+        calories: null,
+        nutrients: {
+          carbs: null,
+          protein: null,
+          fat: null,
+        },
+        createdAt: timestamp // 작성 시간 정보도 데이터에 추가
+      };
+      
+      await set(foodsRef, foodData);
+      
+      // 새로 추가된 음식 객체 생성
+      const newAddedFood = {
+        ...foodData,
+        id: foodKey,  // 필요한 경우 ID 추가
+      };
+      
+      // 새로 추가된 음식을 선택된 항목에 추가
+      setSelectedItems([...selectedItems, newAddedFood]);
+      
+      // 검색어 초기화하여 모든 음식이 표시되도록 함
+      setSearchTerm('');
+      
+      // 새로 추가된 음식이 filteredFood에 즉시 반영되도록 함
+      if (foods) {
+        const updatedFoods = { ...foods, [foodKey]: newAddedFood };
+        dispatch(setFoods(updatedFoods));
+      }
+      
       setIsModalVisible(false);
       setNewFood({
         name: '',
         calories: null,
-        weight: null,
+        weight: '',
         nutrients: {
           carbs: null,
           protein: null,
           fat: null,
         },
       });
+      
+      // 모달이 닫힌 후 약간의 지연 시간을 두고 스크롤 위치 조정
+      setTimeout(() => {
+        if (listRef.current) {
+          // 선택된 항목이 목록의 맨 위에 표시되므로 스크롤을 맨 위로 이동
+          listRef.current.scrollToItem(0);
+        }
+      }, 100);
     } catch (error) {
       console.error('음식 추가 실패:', error);
       alert('음식 추가에 실패했습니다.');
@@ -185,12 +230,7 @@ const Meal = () => {
     return (
       newFood.name !== '' &&
       newFood.weight !== null &&
-      newFood.weight !== '' &&
-      newFood.calories !== null &&
-      newFood.nutrients &&
-      newFood.nutrients.carbs !== null &&
-      newFood.nutrients.protein !== null &&
-      newFood.nutrients.fat !== null
+      newFood.weight !== ''
     );
   };
 
@@ -330,7 +370,7 @@ const Meal = () => {
       </div>
       <Modal
         title={<Text style={{ fontSize: '20px', fontWeight: '800', color: 'black', letterSpacing: '1px', fontFamily: 'Pretendard-900'}}>
-          음식 추가 : 100g/ml 기준
+          음식 추가하기
         </Text>}
         visible={isModalVisible}
         onOk={handleModalOk}
@@ -340,63 +380,33 @@ const Meal = () => {
         okButtonProps={{ disabled: !isFormValid() }}
       >
         <Form layout="vertical">
-          <Form.Item label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>음식 이름</Text>}>
+          <Form.Item 
+            label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>음식 이름</Text>}
+            help="음식 이름을 상세하게 입력해주세요. (예: 돼지고기 김치찌개, 홍길동 부대찌개 라면 등)"
+          >
             <Input
               name="name"
               value={newFood.name}
-              placeholder="예) 카레라이스"
+              placeholder="예) 김치찌개, 돼지고기 김치찌개"
               onChange={(e) => handleInputChange(e, 'name')}
             />
           </Form.Item>
-          <Form.Item label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>총 중량 (식품 전체 중량)</Text>}>
+          <Form.Item 
+            label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>총 중량</Text>}
+            help="기본 단위는 '인분'입니다. 그램 단위로 입력하시려면 단위를 변경해주세요."
+          >
             <Input
               name="weight"
               value={newFood.weight}
-              placeholder="예) 300g 혹은 600ml"
+              placeholder="예) 1, 2, 0.5"
               onChange={(e) => handleInputChange(e, 'weight')}
               style={{ width: '100%' }}
               addonAfter={
-                <Select defaultValue="g" onChange={handleWeightUnitChange}>
-                  <Option value="g">g</Option>
-                  <Option value="ml">ml</Option>
+                <Select defaultValue="인분" value={weightUnit} onChange={handleWeightUnitChange}>
+                  <Select.Option value="인분">인분</Select.Option>
+                  <Select.Option value="g">g</Select.Option>
                 </Select>
               }
-            />
-          </Form.Item>
-          <Form.Item label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>칼로리 (Kcal)</Text>}>
-            <InputNumber
-              name="calories"
-              value={newFood.calories}
-              placeholder="예) 300"
-              onChange={(e) => handleInputChange(e, 'calories')}
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
-          <Form.Item label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>탄수화물 (g)</Text>}>
-            <InputNumber
-              name="nutrients.carbs"
-              value={newFood.nutrients.carbs}
-              placeholder="예) 30"
-              onChange={(e) => handleInputChange(e, 'nutrients.carbs')}
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
-          <Form.Item label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>단백질 (g)</Text>}>
-            <InputNumber
-              name="nutrients.protein"
-              value={newFood.nutrients.protein}
-              placeholder="예) 10"
-              onChange={(e) => handleInputChange(e, 'nutrients.protein')}
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
-          <Form.Item label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>지방 (g)</Text>}>
-            <InputNumber
-              name="nutrients.fat"
-              value={newFood.nutrients.fat}
-              placeholder="예) 10"
-              onChange={(e) => handleInputChange(e, 'nutrients.fat')}
-              style={{ width: '100%' }}
             />
           </Form.Item>
         </Form>

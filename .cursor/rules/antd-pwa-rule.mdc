@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: "React, Ant Design, Antd Mobile, Redux, Tailwind CSS를 사용하는 프로젝트의 코드 품질 및 성능 향상을 위한 규칙"
+globs: ["src/**/*.{js,jsx}"]
+---
+
+# 코드 스타일 및 품질
+- **일관된 코드 스타일 유지**: 코드의 가독성과 유지 보수성을 높이기 위해 [Prettier](mdc:https:/prettier.io)와 [ESLint](mdc:https:/eslint.org)를 설정하고 준수합니다.&#8203;:contentReference[oaicite:2]{index=2}
+- **타입 안정성 확보**: :contentReference[oaicite:3]{index=3}&#8203;:contentReference[oaicite:4]{index=4}
+
+# 성능 최적화
+- **코드 스플리팅 및 지연 로딩**: :contentReference[oaicite:5]{index=5}&#8203;:contentReference[oaicite:6]{index=6}
+- **메모이제이션 활용**: :contentReference[oaicite:7]{index=7}&#8203;:contentReference[oaicite:8]{index=8}
+
+# 상태 관리
+- **Redux Toolkit 사용**: :contentReference[oaicite:9]{index=9}&#8203;:contentReference[oaicite:10]{index=10}
+- **비동기 로직 관리**: :contentReference[oaicite:11]{index=11}&#8203;:contentReference[oaicite:12]{index=12}
+
+# UI 구성
+- **Ant Design 및 Antd Mobile 컴포넌트 사용 시 공식 가이드라인 준수**: :contentReference[oaicite:13]{index=13}&#8203;:contentReference[oaicite:14]{index=14}
+- **Tailwind CSS 활용**: :contentReference[oaicite:15]{index=15}&#8203;:contentReference[oaicite:16]{index=16}
+
+# 테스트
+- **단위 테스트 및 통합 테스트 작성**: :contentReference[oaicite:17]{index=17}&#8203;:contentReference[oaicite:18]{index=18}
+
+# 보안
+- **취약점 검사 및 패치**: :contentReference[oaicite:19]{index=19}&#8203;:contentReference[oaicite:20]{index=20}
+
+:contentReference[oaicite:21]{index=21}&#8203;:contentReference[oaicite:22]{index=22}
+::contentReference[oaicite:23]{index=23}
+ 

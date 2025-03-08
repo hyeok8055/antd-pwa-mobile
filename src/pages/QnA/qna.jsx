@@ -13,6 +13,16 @@ const QnA = () => {
       title: '앱 사용법',
       items: [
         {
+          key: 'a0',
+          title: '왜 예측 칼로리를 기재하나요?',
+          content: '연구에 따르면, 단순히 섭취한 칼로리를 제공받는 것보다 스스로 음식의 칼로리를 추정해보는 것이 다이어트에 더 효과적이라고 합니다. 이에 저희 앱은 이러한 방식으로 사용자 경험을 개선하고 있습니다.'
+        },
+        {
+          key: 'a00',
+          title: '그럼 실제 칼로리는 언제 알 수 있나요?',
+          content: '실제 칼로리는 다음 식사 직전에 제공됩니다.'
+        },
+        {
           key: 'a1',
           title: '이 앱은 어떤 기능을 제공하나요?',
           content: '칼로리 싱크는 식단 관리, 운동 기록, 체중 추적, BMI 계산 등을 제공하는 종합 건강 관리 앱입니다. 매일의 식사를 기록하고 칼로리를 추적하며, 운동 활동을 기록하고 건강 목표를 향해 나아갈 수 있도록 도와줍니다.'
@@ -189,7 +199,7 @@ const QnA = () => {
             {Object.entries(qnaCategories).map(([key, category]) => (
               <Tabs.Tab title={category.title} key={key}>
                 <div className="qna-category-content">
-                  <Collapse>
+                  <Collapse defaultActiveKey={key === 'app' ? ['a0'] : []}>
                     {category.items.map(item => (
                       <Collapse.Panel key={item.key} title={item.title}>
                         {item.content}

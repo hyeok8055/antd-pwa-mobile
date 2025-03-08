@@ -20,7 +20,7 @@ const Footer = () => {
   const tabs = [
     { key: '/main', title: '식사 기록', icon: <EditFill /> },
     { key: '/fitness', title: '건강 일지', icon: <HeartFill /> },
-    { key: '/qna', title: 'QnA', icon: <QuestionCircleOutline /> },
+    { key: '/qna', title: 'FAQ', icon: <QuestionCircleOutline /> },
   ];
 
   return (
