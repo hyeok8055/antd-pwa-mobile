@@ -4,7 +4,7 @@ import { Typography } from 'antd';
 
 const { Text } = Typography;
 
-export const useModal = (foodData) => {
+export const useModal = (foodData, testMode = false) => {
   useEffect(() => {
     const calculateCalorieDifference = (mealType) => {
       if (!foodData || !foodData[mealType]) return null;
@@ -25,11 +25,53 @@ export const useModal = (foodData) => {
     };
 
     const showCalorieDifferenceModal = (mealType, includeSnacks = false) => {
+      // 테스트 모드일 때는 기본값 표시
+      if (testMode) {
+        const testContent = (
+          <>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              width: '100%',
+              marginTop: '10px'
+            }}>실제 섭취 칼로리와<br/>나의 예측의 차이는</div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              width: '100%',
+              marginTop: '10px'
+            }}>
+              <Text 
+                style={{ 
+                  fontSize: '30px', 
+                  fontWeight: '900', 
+                  fontFamily: 'Pretendard-900', 
+                  color: 'rgb(22, 119, 255)',
+                  textAlign: 'center',
+                  width: '100%'
+                }}
+              >
+                ±0kcal
+              </Text>
+            </div>
+          </>
+        );
+
+        Modal.alert({
+          title: '테스트 모드: 식사 결과',
+          content: testContent,
+          confirmText: '확인했습니다.',
+        });
+        return;
+      }
+
       const difference = calculateCalorieDifference(mealType);
       if (difference === null) return;
 
       const isPositive = difference > 0;
-      const absValue = Math.abs(difference);
+      const absValue = Math.abs(difference).toFixed(2);
 
       let content = (
         <>
@@ -39,7 +81,7 @@ export const useModal = (foodData) => {
             alignItems: 'center', 
             width: '100%',
             marginTop: '10px'
-          }}>칼로리 예측 편차는</div>
+          }}>실제 섭취 칼로리와 나의 예측의 차이는</div>
           <div style={{ 
             display: 'flex', 
             justifyContent: 'center', 
@@ -68,12 +110,12 @@ export const useModal = (foodData) => {
         const snackDifference = calculateSnackCalorieDifference();
         if (snackDifference !== null) {
           const isSnackPositive = snackDifference > 0;
-          const absSnackValue = Math.abs(snackDifference);
+          const absSnackValue = Math.abs(snackDifference).toFixed(2);
           content = (
             <>
               {content}
               <div style={{ marginTop: '20px' }}>
-                <div>예측대비 편차는</div>
+                <div>간식의 실제 섭취 칼로리와 나의 예측의 차이는</div>
                 <Text 
                   style={{ 
                     fontSize: '30px', 
@@ -101,6 +143,12 @@ export const useModal = (foodData) => {
     };
 
     const checkTimeAndShowModal = () => {
+      // 테스트 모드일 때는 고정값 사용
+      if (testMode) {
+        showCalorieDifferenceModal('lunch', true);
+        return;
+      }
+
       const now = new Date();
       const hours = now.getHours();
       const minutes = now.getMinutes();
@@ -114,9 +162,14 @@ export const useModal = (foodData) => {
       const eveningStart = 17 * 60; // 17:00
       const eveningEnd = 18 * 60;   // 18:00
 
+      // 테스트 시 주석처리 하면됨 //
       let mealType = null;
       let includeSnacks = false;
 
+      // let mealType = 'lunch';  // 테스트용 고정 값
+      // let includeSnacks = true; // 테스트용 고정 값
+
+      // 테스트 시 주석처리 하면됨 //
       if (currentTime >= morningStart && currentTime <= morningEnd) {
         mealType = 'dinner';  // 전날 저녁 식사 결과
         includeSnacks = true; // 전날 간식도 함께 표시
@@ -135,14 +188,16 @@ export const useModal = (foodData) => {
 
       if (mealType && foodData?.[mealType]) {
         showCalorieDifferenceModal(mealType, includeSnacks);
+        // 테스트 시 주석처리 하면됨 //
         localStorage.setItem(lastShownKey, currentTimeStr);
       }
     };
 
-    // 5분마다 시간을 체크 (300000ms = 5분)
-    const intervalId = setInterval(checkTimeAndShowModal, 300000);
+    // 테스트 모드일 때는 1분마다 실행 (더 빠른 테스트를 위해)
+    const intervalTime = testMode ? 60000 : 300000;
+    const intervalId = setInterval(checkTimeAndShowModal, intervalTime);
     checkTimeAndShowModal(); // 초기 실행
 
     return () => clearInterval(intervalId);
-  }, [foodData]);
+  }, [foodData, testMode]);
 };

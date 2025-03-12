@@ -13,25 +13,15 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-self.addEventListener('install', (event) => {
-  console.log('서비스 워커가 설치됨');
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  console.log('서비스 워커가 활성화됨');
-  event.waitUntil(clients.claim());
-});
-
-// 백그라운드 메시지 처리 개선
+// 백그라운드 메시지 처리
 messaging.onBackgroundMessage((payload) => {
   console.log('백그라운드 메시지 수신:', payload);
   
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/path/to/icon.png', // 앱 아이콘 경로로 수정
-    badge: '/path/to/badge.png', // 알림 뱃지 아이콘
+    icon: '/icons/apple-touch-icon-152x152.png', // 앱 아이콘 경로로 수정
+    badge: '/icons/apple-touch-icon-76x76.png', // 알림 뱃지 아이콘
     data: payload.data, // 추가 데이터 전달
     tag: 'notification-tag', // 알림 그룹화
     vibrate: [200, 100, 200] // 진동 패턴
@@ -40,7 +30,7 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// 알림 클릭 이벤트 처리 개선
+// 알림 클릭 이벤트 처리
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
@@ -63,4 +53,39 @@ self.addEventListener('notificationclick', (event) => {
       }
     })
   );
+});
+
+// iOS 웹 푸시 지원을 위한 기본 이벤트 핸들러
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
+// iOS 16.4+ 웹 푸시 수신 시 필요한 이벤트 핸들러
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  
+  try {
+    const data = event.data.json();
+    console.log('푸시 이벤트 데이터:', data);
+    
+    if (data.notification) {
+      const title = data.notification.title || '새 알림';
+      const options = {
+        body: data.notification.body || '',
+        icon: '/icons/apple-touch-icon-152x152.png',
+        badge: '/icons/apple-touch-icon-76x76.png',
+        data: data.data || {}
+      };
+      
+      event.waitUntil(
+        self.registration.showNotification(title, options)
+      );
+    }
+  } catch (error) {
+    console.error('푸시 이벤트 처리 오류:', error);
+  }
 }); 
