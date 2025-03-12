@@ -173,7 +173,7 @@ const CaloriEntry = () => {
   };
 
   return (
-    <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'auto', paddingBottom: '20px' }}>
       {loading && !saveSuccess ? (
         <div style={{ marginTop: '60%' }}>
           <LoadingOutlined style={{ fontSize: 48, color: '#5FDD9D' }} spin />
@@ -192,13 +192,13 @@ const CaloriEntry = () => {
           </div>
         </div>
       ) : (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-          <div style={{ marginTop: 60, marginBottom: 40 }}>
+        <div style={{ width: '100%', height: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '30px' }}>
+          <div style={{ marginTop: 30, marginBottom: 20 }}>
             <Text style={{ fontSize: '28px', color: '#5FDD9D', fontFamily: 'Pretendard-800', letterSpacing: '1.5px' }}>
               칼로리 편차 확인하기
             </Text>
           </div>
-          <Row direction="column" justify='center' align='Row-start' style={{ marginBottom: 20, width: '100%', height: '150px' }}>
+          <Row direction="column" justify='center' align='Row-start' style={{ marginBottom: 20, width: '100%', height: 'auto', minHeight: '120px' }}>
             <div
               style={{
                 height: '40px',
@@ -244,7 +244,7 @@ const CaloriEntry = () => {
               backgroundColor: '#5FDD9D',
               borderRadius: '8px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              marginTop: 140,
+              marginTop: 80,
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
@@ -267,7 +267,7 @@ const CaloriEntry = () => {
               fontFamily: 'Pretendard-500',
               borderRadius: '8px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              marginTop: 15,
+              marginTop: 20,
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
@@ -292,7 +292,8 @@ const CaloriEntry = () => {
               backgroundColor: '#5FDD9D',
               borderRadius: '8px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              marginTop: 40,
+              marginTop: 20,
+              marginBottom: 30,
             }}
             onClick={handleClick}
             disabled={loading}
