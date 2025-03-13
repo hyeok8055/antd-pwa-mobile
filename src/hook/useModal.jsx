@@ -197,19 +197,38 @@ export const useModal = (foodData, testMode = false) => {
       
       // 시간대 확인
       if (hours < 7 || (hours > 9 && hours < 11) || (hours > 12 && hours < 17) || hours > 18) {
-        message = '현재는 이전 식사 결과를 조회할 수 있는 시간이 아닙니다.\n\n';
-        message += '조회 가능 시간:\n';
-        message += '- 아침 식사 결과: 오전 11시 ~ 12시\n';
-        message += '- 점심 식사 결과: 오후 5시 ~ 6시\n';
-        message += '- 저녁/간식 결과: 오전 7시 ~ 9시';
+        message = (
+          <div style={{ textAlign: 'center' }}>
+            <Text style={{ fontSize: 16, lineHeight: 1.5 }}>
+              현재는 이전 식사 결과를 조회할 수 있는 시간이 아닙니다.
+            </Text>
+            <br />
+            <br />
+            <Text strong style={{ fontSize: 15, color: '#333', lineHeight: 1.5, marginTop: '10px' }}>
+              조회 가능 시간:
+            </Text>
+            <br />
+            <Text style={{ fontSize: 14, color: '#666', lineHeight: 1.8 }}>
+              - 아침 식사 결과: 오전 11시 ~ 12시<br />
+              - 점심 식사 결과: 오후 5시 ~ 6시<br />
+              - 저녁/간식 결과: 오전 7시 ~ 9시
+            </Text>
+          </div>
+        );
       } else {
         // 시간은 맞지만 데이터가 없는 경우
+        const messageStyle = { 
+          fontSize: 16, 
+          textAlign: 'center', 
+          lineHeight: 1.5 
+        };
+        
         if (hours >= 7 && hours <= 9) {
-          message = '어제 저녁 식사 또는 간식 기록이 없습니다.';
+          message = <Text style={messageStyle}>어제 저녁 식사 또는 간식 기록이 없습니다.</Text>;
         } else if (hours >= 11 && hours <= 12) {
-          message = '아침 식사 기록이 없습니다.';
+          message = <Text style={messageStyle}>아침 식사 기록이 없습니다.</Text>;
         } else if (hours >= 17 && hours <= 18) {
-          message = '점심 식사 기록이 없습니다.';
+          message = <Text style={messageStyle}>점심 식사 기록이 없습니다.</Text>;
         }
       }
       
