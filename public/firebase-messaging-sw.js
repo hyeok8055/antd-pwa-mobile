@@ -30,11 +30,11 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/path/to/icon.png', // 앱 아이콘 경로로 수정
-    badge: '/path/to/badge.png', // 알림 뱃지 아이콘
-    data: payload.data, // 추가 데이터 전달
-    tag: 'notification-tag', // 알림 그룹화
-    vibrate: [200, 100, 200] // 진동 패턴
+    icon: '/icons/favicon.ico', // 실제 존재하는 아이콘 경로로 수정
+    badge: '/icons/favicon.ico', // 실제 존재하는 뱃지 아이콘 경로로 수정
+    data: payload.data,
+    tag: 'notification-tag',
+    vibrate: [200, 100, 200]
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

@@ -25,16 +25,18 @@ const app = initializeApp(firebaseConfig);
 // 푸시 알림을 위한 messaging 초기화 및 서비스 워커 등록
 let messaging = null;
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  // 서비스 워커 등록
+  // 서비스 워커 등록 - 여기서는 한 번만 등록되도록 수정
   navigator.serviceWorker.register('/firebase-messaging-sw.js')
     .then((registration) => {
-      // 서비스 워커 등록 후 메시징 초기화
-      messaging = getMessaging(app);
+      // console.log로 꼭 한 번만 실행되는지 확인
       console.log('Service Worker registered with scope:', registration.scope);
+      messaging = getMessaging(app);
     })
     .catch((err) => {
       console.error('Service Worker registration failed:', err);
     });
+} else {
+  console.log('이 브라우저는 서비스 워커를 지원하지 않거나 브라우저 환경이 아닙니다.');
 }
 
 console.log('firebase messaging initialized:',messaging);
@@ -55,15 +57,21 @@ export const getFCMToken = async (vapidKey) => {
   }
 };
 
-// 포어그라운드 메시지 수신 리스너
-export const onMessageListener = () =>
-  new Promise((resolve) => {
+// 포어그라운드 메시지 수신 리스너 - 호출 시 한 번만 리스너 등록되도록 수정
+let messageListener = null;
+export const onMessageListener = () => {
+  if (messageListener) return messageListener; // 이미 리스너가 있으면 기존 것 반환
+  
+  messageListener = new Promise((resolve) => {
     if (!messaging) return;
     onMessage(messaging, (payload) => {
-      // console.log('메시지 수신:', payload);
+      console.log('새 메시지 수신:', payload);
       resolve(payload);
     });
   });
+  
+  return messageListener;
+};
 
 // const analytics = getAnalytics(app);
 
