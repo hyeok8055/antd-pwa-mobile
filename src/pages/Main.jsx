@@ -7,7 +7,7 @@ import 'dayjs/locale/ko';
 import { useSelector } from 'react-redux';
 import { useFood } from '@/hook/useFood';
 import { useModal } from '@/hook/useModal';
-
+import { BellOutline } from 'antd-mobile-icons';
 import { CheckCircleTwoTone, ClockCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
