@@ -30,6 +30,8 @@ const Main = () => {
   });
   const navigate = useNavigate();
 
+  const { showModal, isModalAvailable } = useModal(foodData);
+
   useEffect(() => {
     if (foodData) {
       setMealFlags({
@@ -124,6 +126,29 @@ const Main = () => {
         <Text style={{ letterSpacing: '0.5px', fontSize: '18px', fontWeight: '500', fontFamily: 'Pretendard-500'}}>
         {new Date().toLocaleDateString("ko-KR", { weekday: "long" })}
         </Text>
+      </Row>
+      
+      <Row justify="center" style={{ marginBottom: '20px' }}>
+        <div 
+          onClick={showModal}
+          style={{ 
+            position: 'relative', 
+            cursor: 'pointer'
+          }}
+        >
+          <BellOutline style={{ fontSize: '28px' }} />
+          {isModalAvailable && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '8px',
+              height: '8px',
+              backgroundColor: 'red',
+              borderRadius: '50%'
+            }} />
+          )}
+        </div>
       </Row>
 
       <Row gutter={[16, 24]} justify="center">
