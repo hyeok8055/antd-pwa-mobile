@@ -3,7 +3,6 @@ import { useLocation, useNavigate, BrowserRouter, Routes, Route, Navigate } from
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
-import NotificationPermissionModal from './components/NotificationPermissionModal';
 import { auth, db, getFCMToken, onMessageListener, isWebPushSupported } from './firebaseconfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
@@ -145,7 +144,6 @@ const App = () => {
 
   return (
     <BrowserRouter>
-      <NotificationPermissionModal />
       <ConditionalHeaderFooter />
     </BrowserRouter>
   );
