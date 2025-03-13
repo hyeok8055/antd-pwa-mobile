@@ -31,7 +31,7 @@ const Main = () => {
   });
   const navigate = useNavigate();
 
-  const { showModal, isModalAvailable } = useModal(foodData, false);
+  useModal(foodData);
 
   useEffect(() => {
     if (foodData) {
@@ -76,8 +76,6 @@ const Main = () => {
 
     return () => clearInterval(intervalId);
   }, []);
-
-  useModal(foodData);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -135,24 +133,12 @@ const Main = () => {
       
       <Row justify="center" style={{ marginBottom: '20px' }}>
         <div 
-          onClick={showModal}
           style={{ 
             position: 'relative', 
             cursor: 'pointer'
           }}
         >
           <BellOutline style={{ fontSize: '28px' }} />
-          {isModalAvailable && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '8px',
-              height: '8px',
-              backgroundColor: 'red',
-              borderRadius: '50%'
-            }} />
-          )}
         </div>
       </Row>
 

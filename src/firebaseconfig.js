@@ -22,10 +22,19 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 // console.log('firebase app initialized:',app);
 
-// 푸시 알림을 위한 messaging 초기화
+// 푸시 알림을 위한 messaging 초기화 및 서비스 워커 등록
 let messaging = null;
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  messaging = getMessaging(app);
+  // 서비스 워커 등록
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then((registration) => {
+      // 서비스 워커 등록 후 메시징 초기화
+      messaging = getMessaging(app);
+      console.log('Service Worker registered with scope:', registration.scope);
+    })
+    .catch((err) => {
+      console.error('Service Worker registration failed:', err);
+    });
 }
 
 console.log('firebase messaging initialized:',messaging);
