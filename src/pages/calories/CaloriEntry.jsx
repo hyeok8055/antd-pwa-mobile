@@ -32,7 +32,7 @@ const CaloriEntry = () => {
   const [foodDetails, setFoodDetails] = useState([]);
   const [mealType, setMealType] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [redirectTimer, setRedirectTimer] = useState(5);
+  const [redirectTimer, setRedirectTimer] = useState(3);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);

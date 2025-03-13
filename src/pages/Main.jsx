@@ -7,6 +7,7 @@ import 'dayjs/locale/ko';
 import { useSelector } from 'react-redux';
 import { useFood } from '@/hook/useFood';
 import { useModal } from '@/hook/useModal';
+import { BellOutline } from 'antd-mobile-icons';
 
 import { CheckCircleTwoTone, ClockCircleOutlined } from '@ant-design/icons';
 
@@ -29,6 +30,8 @@ const Main = () => {
     snack: false,
   });
   const navigate = useNavigate();
+
+  const { showModal, isModalAvailable } = useModal(foodData, false);
 
   useEffect(() => {
     if (foodData) {
@@ -73,8 +76,6 @@ const Main = () => {
 
     return () => clearInterval(intervalId);
   }, []);
-
-  useModal(foodData, false);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -124,10 +125,34 @@ const Main = () => {
           .replace(/\.$/, "")}
         </Text>
       </Row>
-      <Row justify="center" style={{ marginBottom: '40px' }}>
+      <Row justify="center" style={{ marginBottom: '20px' }}>
         <Text style={{ letterSpacing: '0.5px', fontSize: '18px', fontWeight: '500', fontFamily: 'Pretendard-500'}}>
         {new Date().toLocaleDateString("ko-KR", { weekday: "long" })}
         </Text>
+      </Row>
+      
+      <Row justify="center" style={{ marginBottom: '20px' }}>
+        <div 
+          onClick={isModalAvailable ? showModal : undefined}
+          style={{ 
+            position: 'relative', 
+            cursor: isModalAvailable ? 'pointer' : 'not-allowed',
+            opacity: isModalAvailable ? 1 : 0.5
+          }}
+        >
+          <BellOutline style={{ fontSize: '28px' }} />
+          {isModalAvailable && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '8px',
+              height: '8px',
+              backgroundColor: 'red',
+              borderRadius: '50%'
+            }} />
+          )}
+        </div>
       </Row>
 
       <Row gutter={[16, 24]} justify="center">

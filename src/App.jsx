@@ -45,7 +45,7 @@ const App = () => {
       try {
         // 웹 푸시 지원 확인
         if (!isWebPushSupported()) {
-          console.log('이 브라우저는 웹 푸시 알림을 지원하지 않습니다');
+          // console.log('이 브라우저는 웹 푸시 알림을 지원하지 않습니다');
           return;
         }
 
@@ -56,7 +56,7 @@ const App = () => {
         const isPWA = window.navigator.standalone || 
                      window.matchMedia('(display-mode: standalone)').matches;
         
-        console.log('PWA 모드 실행 여부:', isPWA);
+        // console.log('PWA 모드 실행 여부:', isPWA);
         
         // 권한이 'default' 상태일 때만 권한 요청
         if (permission === 'default') {
@@ -64,17 +64,17 @@ const App = () => {
           // 여기서는 PWA 모드에서만 자동 요청
           if (isPWA) {
             permission = await Notification.requestPermission();
-            console.log('알림 권한 요청 결과:', permission);
+            // console.log('알림 권한 요청 결과:', permission);
           }
         }
 
         if (permission === 'granted') {
-          console.log('알림이 허용되었습니다');
+          // console.log('알림이 허용되었습니다');
           // VAPID 키로 토큰 가져오기
           const token = await getFCMToken('BBOl7JOGCasgyKCZv1Atq_5MdnvWAWk_iWleIggXfXN3aMGJeuKdEHSTp4OGUfmVPNHwnf5eCLQyY80ITKzz7qk');
           
           if (token) {
-            console.log('FCM 토큰:', token);
+            // console.log('FCM 토큰:', token);
             // 로그인된 사용자의 경우 토큰을 Firestore에 저장
             if (auth.currentUser) {
               await setDoc(doc(db, 'users', auth.currentUser.uid), {
@@ -87,7 +87,7 @@ const App = () => {
           // 포어그라운드 메시지 수신 처리
           messageUnsubscribe = onMessageListener()
             .then((payload) => {
-              console.log('포어그라운드 메시지:', payload);
+              // console.log('포어그라운드 메시지:', payload);
               
               // iOS에서 알림 표시
               new Notification(payload.notification.title, {
@@ -96,12 +96,12 @@ const App = () => {
                 badge: '/logo.png'
               });
             })
-            .catch((err) => console.error('메시지 수신 에러:', err));
+            // .catch((err) => console.error('메시지 수신 에러:', err));
         } else if (permission === 'denied') {
-          console.log('알림이 차단되었습니다. 브라우저 설정에서 허용해주세요.');
+          // console.log('알림이 차단되었습니다. 브라우저 설정에서 허용해주세요.');
         }
       } catch (error) {
-        console.error('알림 설정 중 에러 발생:', error);
+        // console.error('알림 설정 중 에러 발생:', error);
       }
     };
 
@@ -119,12 +119,12 @@ const App = () => {
     const handleRequestPermission = async () => {
       try {
         const permission = await Notification.requestPermission();
-        console.log('알림 권한 요청 결과:', permission);
+        // console.log('알림 권한 요청 결과:', permission);
         if (permission === 'granted') {
           setupNotifications(); // 권한이 부여된 후 알림 설정
         }
       } catch (error) {
-        console.error('권한 요청 실패:', error);
+        // console.error('권한 요청 실패:', error);
       }
     };
 

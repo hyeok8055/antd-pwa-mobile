@@ -20,20 +20,20 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-console.log('firebase app initialized:',app);
+// console.log('firebase app initialized:',app);
 
 // 푸시 알림을 위한 messaging 초기화
 let messaging = null;
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   try {
     messaging = getMessaging(app);
-    console.log('Firebase messaging initialized:', messaging);
+    // console.log('Firebase messaging initialized:', messaging);
   } catch (error) {
-    console.error('Firebase messaging 초기화 실패:', error);
+    // console.error('Firebase messaging 초기화 실패:', error);
   }
 }
 
-console.log('firebase messaging initialized:',messaging);
+// console.log('firebase messaging initialized:',messaging);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -56,10 +56,10 @@ export const getFCMToken = async (vapidKey) => {
     }
     
     const token = await getToken(messaging, { vapidKey });
-    console.log('FCM 토큰 발급 성공:', token);
+    // console.log('FCM 토큰 발급 성공:', token);
     return token;
   } catch (error) {
-    console.error('FCM 토큰 가져오기 실패:', error);
+    // console.error('FCM 토큰 가져오기 실패:', error);
     return null;
   }
 };
@@ -69,7 +69,7 @@ export const onMessageListener = () =>
   new Promise((resolve) => {
     if (!messaging) return;
     onMessage(messaging, (payload) => {
-      console.log('메시지 수신:', payload);
+      // console.log('메시지 수신:', payload);
       resolve(payload);
     });
   });
