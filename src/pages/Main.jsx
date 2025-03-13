@@ -49,19 +49,20 @@ const Main = () => {
       
       // 시간 제한 로직 (24시간 형식 기준)
       // 아침식사: 11시(오전 11시) 이후 제한
-      // 점심식사: 17시(오후 5시) 이후 제한
+      // 점심식사: 12시(오후 12시) 이전 및 17시(오후 5시) 이후 제한
       // 저녁식사: 7시(오전 7시)부터 19시(오후 7시) 사이 제한
       const isDinnerRestricted = currentHour >= 7 && currentHour < 19;
+      const isLunchRestricted = currentHour < 12 || currentHour >= 17;
       
       setTimeRestrictions({
         breakfast: currentHour >= 11, // 11시(오전 11시) 이후 아침식사 제한
-        lunch: currentHour >= 17, // 17시(오후 5시) 이후 점심식사 제한
+        lunch: isLunchRestricted, // 12시(오후 12시) 이전 및 17시(오후 5시) 이후 점심식사 제한
         dinner: isDinnerRestricted, // 7시(오전 7시)부터 19시(오후 7시) 사이 저녁식사 제한
         snack: false, // 간식은 제한 없음
       });
       console.log('시간 제한 상태:', {
         breakfast: currentHour >= 11,
-        lunch: currentHour >= 17,
+        lunch: isLunchRestricted,
         dinner: isDinnerRestricted,
         snack: false
       });
@@ -93,7 +94,10 @@ const Main = () => {
       case 'breakfast':
         return '11시(오전 11시) 이후에는 기록할 수 없습니다';
       case 'lunch':
-        return '17시(오후 5시) 이후에는 기록할 수 없습니다';
+        const currentHour = new Date().getHours();
+        return currentHour < 12 
+          ? '12시(오후 12시) 이후부터 기록할 수 있습니다' 
+          : '17시(오후 5시) 이후에는 기록할 수 없습니다';
       case 'dinner':
         return '7시(오전 7시)부터 19시(오후 7시) 사이에는 기록할 수 없습니다';
       default:
