@@ -12,7 +12,6 @@ export default defineConfig({
       devOptions: {
         enabled: true
       },
-      includeAssets: ['icons/*.png', 'icons/favicon.ico'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
@@ -30,10 +29,7 @@ export default defineConfig({
               }
             }
           }
-        ],
-        importScripts: ['/firebase-messaging-sw.js'],
-        skipWaiting: true,
-        clientsClaim: true
+        ]
       },
       manifest: {
         name: 'Calorie Sync',
@@ -42,10 +38,6 @@ export default defineConfig({
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait',
-        categories: ['health', 'fitness'],
-        gcm_sender_id: '830533101887',
-        permissions: ["notifications"],
         icons: [
             {
               src: "./icons/apple-touch-icon-57x57.png",
@@ -123,11 +115,12 @@ export default defineConfig({
               sizes: "512x512",
               type: "image/png"
             }
-          ],
-        related_applications: [],
-        prefer_related_applications: false,
+          ]
       },
-      maximumFileSizeToCacheInBytes: 5000000,
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정 (필요에 따라 조정)
+      },
+      gcm_sender_id: '830533101887' // Firebase Cloud Messaging sender ID
     })
   ],
   resolve: {

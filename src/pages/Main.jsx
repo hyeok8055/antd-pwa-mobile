@@ -77,6 +77,8 @@ const Main = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  useModal(foodData);
+
   if (loading) {
     return <div>Loading...</div>;
   }

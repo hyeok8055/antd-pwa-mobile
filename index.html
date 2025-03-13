@@ -3,30 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="icons/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    
-    <!-- iOS PWA 지원 메타태그 -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Calorie Sync">
-    
-    <!-- iOS 홈 화면 아이콘 -->
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120x120.png">
-    
-    <!-- iOS 스플래시 스크린 -->
-    <link rel="apple-touch-startup-image" href="icons/apple-touch-icon-152x152.png">
-    
-    <!-- 웹 푸시 관련 설정 -->
-    <meta name="theme-color" content="#ffffff">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--아이콘-->
     <title>Calorie Sync</title>
   </head>
   <body class="h-full">
     <div id="root" class="h-full"></div>
     <script type="module" src="/src/main.jsx"></script>
-    
-    <!-- firebase-messaging-sw.js는 빌드 과정에서 자동으로 처리됨 -->
+    <script src="/public/firebase-messaging-sw.js"></script>
   </body>
 </html>
