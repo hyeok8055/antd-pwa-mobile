@@ -133,11 +133,10 @@ const Main = () => {
       
       <Row justify="center" style={{ marginBottom: '20px' }}>
         <div 
-          onClick={isModalAvailable ? showModal : undefined}
+          onClick={showModal}
           style={{ 
             position: 'relative', 
-            cursor: isModalAvailable ? 'pointer' : 'not-allowed',
-            opacity: isModalAvailable ? 1 : 0.5
+            cursor: 'pointer'
           }}
         >
           <BellOutline style={{ fontSize: '28px' }} />

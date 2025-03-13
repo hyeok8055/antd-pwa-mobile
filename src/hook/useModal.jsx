@@ -180,10 +180,46 @@ export const useModal = (foodData, testMode = false) => {
   // 모달을 표시하는 함수
   const showModal = useCallback(() => {
     const { available, mealType, includeSnacks } = checkModalAvailable();
+    
+    if (testMode) {
+      showCalorieDifferenceModal(mealType, includeSnacks);
+      return;
+    }
+    
     if (available && mealType) {
       showCalorieDifferenceModal(mealType, includeSnacks);
+    } else {
+      // 조회 가능한 시간이 아니거나 식사 기록이 없는 경우
+      const now = new Date();
+      const hours = now.getHours();
+      
+      let message = '';
+      
+      // 시간대 확인
+      if (hours < 7 || (hours > 9 && hours < 11) || (hours > 12 && hours < 17) || hours > 18) {
+        message = '현재는 이전 식사 결과를 조회할 수 있는 시간이 아닙니다.\n\n';
+        message += '조회 가능 시간:\n';
+        message += '- 아침 식사 결과: 오전 11시 ~ 12시\n';
+        message += '- 점심 식사 결과: 오후 5시 ~ 6시\n';
+        message += '- 저녁/간식 결과: 오전 7시 ~ 9시';
+      } else {
+        // 시간은 맞지만 데이터가 없는 경우
+        if (hours >= 7 && hours <= 9) {
+          message = '어제 저녁 식사 또는 간식 기록이 없습니다.';
+        } else if (hours >= 11 && hours <= 12) {
+          message = '아침 식사 기록이 없습니다.';
+        } else if (hours >= 17 && hours <= 18) {
+          message = '점심 식사 기록이 없습니다.';
+        }
+      }
+      
+      Modal.alert({
+        title: '식사 결과 조회 불가',
+        content: message,
+        confirmText: '확인',
+      });
     }
-  }, [checkModalAvailable, showCalorieDifferenceModal]);
+  }, [checkModalAvailable, showCalorieDifferenceModal, testMode]);
 
   return {
     showModal,
