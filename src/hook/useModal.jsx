@@ -24,8 +24,11 @@ export const useModal = (foodData, testMode = false) => {
   }, [foodData]);
 
   const showCalorieDifferenceModal = useCallback((mealType, includeSnacks = false) => {
+    console.log('showCalorieDifferenceModal 호출됨:', mealType, includeSnacks);
+    
     // 테스트 모드일 때는 기본값 표시
     if (testMode) {
+      console.log('테스트 모드 모달 표시');
       const testContent = (
         <>
           <div style={{ 
@@ -66,8 +69,22 @@ export const useModal = (foodData, testMode = false) => {
       return;
     }
 
+    // 실제 데이터 확인
+    console.log('식사 데이터 확인:', mealType, foodData?.[mealType]);
+    
     const difference = calculateCalorieDifference(mealType);
-    if (difference === null) return;
+    console.log('칼로리 차이:', difference);
+    
+    // 차이가 null이면 기본 메시지 표시
+    if (difference === null) {
+      console.log('칼로리 차이가 null임');
+      Modal.alert({
+        title: '데이터 없음',
+        content: '해당 식사의 칼로리 데이터가 없습니다.',
+        confirmText: '확인',
+      });
+      return;
+    }
 
     const isPositive = difference > 0;
     const absValue = Math.abs(difference).toFixed(2);
@@ -106,7 +123,10 @@ export const useModal = (foodData, testMode = false) => {
 
     // 저녁 식사와 함께 간식 정보 표시
     if (includeSnacks) {
+      console.log('간식 데이터 확인:', foodData?.snacks);
       const snackDifference = calculateSnackCalorieDifference();
+      console.log('간식 칼로리 차이:', snackDifference);
+      
       if (snackDifference !== null) {
         const isSnackPositive = snackDifference > 0;
         const absSnackValue = Math.abs(snackDifference).toFixed(2);
@@ -131,15 +151,24 @@ export const useModal = (foodData, testMode = false) => {
       }
     }
 
-    Modal.alert({
-      title: `${mealType === 'dinner' ? '어제' : '지난'} ${
-        mealType === 'breakfast' ? '아침' : 
-        mealType === 'lunch' ? '점심' : '저녁'
-      } 식사 결과`,
-      content: content,
-      confirmText: '확인했습니다.',
-    });
-  }, [testMode, calculateCalorieDifference, calculateSnackCalorieDifference]);
+    console.log('최종 모달 내용 생성 완료');
+    
+    try {
+      Modal.alert({
+        title: `${mealType === 'dinner' ? '어제' : '지난'} ${
+          mealType === 'breakfast' ? '아침' : 
+          mealType === 'lunch' ? '점심' : '저녁'
+        } 식사 결과`,
+        content: content,
+        confirmText: '확인했습니다.',
+      });
+      console.log('Modal.alert 호출 완료');
+    } catch (error) {
+      console.error('모달 표시 중 오류 발생:', error);
+      // 기본 alert로 대체
+      alert('식사 결과를 확인할 수 없습니다. 오류가 발생했습니다.');
+    }
+  }, [testMode, calculateCalorieDifference, calculateSnackCalorieDifference, foodData]);
 
   // 모달을 표시할 수 있는지 확인하는 함수
   const checkModalAvailable = useCallback(() => {
@@ -173,22 +202,30 @@ export const useModal = (foodData, testMode = false) => {
     return { 
       available: hasData || (includeSnacks && hasSnackData), 
       mealType, 
-      includeSnacks
+      includeSnacks,
+      isValidTime: mealType !== null // 유효한 시간대인지 여부 추가
     };
   }, [foodData, testMode]);
 
   // 모달을 표시하는 함수
   const showModal = useCallback(() => {
-    const { available, mealType, includeSnacks } = checkModalAvailable();
+    console.log('showModal 함수 호출됨');
+    const modalInfo = checkModalAvailable();
+    console.log('모달 정보:', modalInfo);
+    
+    const { available, mealType, includeSnacks, isValidTime } = modalInfo;
     
     if (testMode) {
+      console.log('테스트 모드에서 모달 표시');
       showCalorieDifferenceModal(mealType, includeSnacks);
       return;
     }
     
     if (available && mealType) {
+      console.log('유효한 데이터로 모달 표시');
       showCalorieDifferenceModal(mealType, includeSnacks);
     } else {
+      console.log('모달 표시 불가 - 시간 또는 데이터 문제');
       // 조회 가능한 시간이 아니거나 식사 기록이 없는 경우
       const now = new Date();
       const hours = now.getHours();
@@ -196,7 +233,7 @@ export const useModal = (foodData, testMode = false) => {
       let message = '';
       
       // 시간대 확인
-      if (hours < 7 || (hours > 9 && hours < 11) || (hours > 12 && hours < 17) || hours > 18) {
+      if (!isValidTime) {
         message = (
           <div style={{ textAlign: 'center' }}>
             <Text style={{ fontSize: 16, lineHeight: 1.5 }}>
@@ -232,6 +269,7 @@ export const useModal = (foodData, testMode = false) => {
         }
       }
       
+      console.log('표시할 메시지:', message);
       Modal.alert({
         title: '식사 결과 조회 불가',
         content: message,

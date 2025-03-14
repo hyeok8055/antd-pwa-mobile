@@ -51,19 +51,19 @@ const Main = () => {
       
       // 시간 제한 로직 (24시간 형식 기준)
       // 아침식사: 11시(오전 11시) 이후 제한
-      // 점심식사: 17시(오후 5시) 이후 제한
+      // 점심식사: 12시(오후 12시) 이전 제한
       // 저녁식사: 7시(오전 7시)부터 19시(오후 7시) 사이 제한
       const isDinnerRestricted = currentHour >= 7 && currentHour < 19;
       
       setTimeRestrictions({
         breakfast: currentHour >= 11, // 11시(오전 11시) 이후 아침식사 제한
-        lunch: currentHour >= 17, // 17시(오후 5시) 이후 점심식사 제한
+        lunch: currentHour < 12, // 12시(오후 12시) 이전 점심식사 제한
         dinner: isDinnerRestricted, // 7시(오전 7시)부터 19시(오후 7시) 사이 저녁식사 제한
         snack: false, // 간식은 제한 없음
       });
       console.log('시간 제한 상태:', {
         breakfast: currentHour >= 11,
-        lunch: currentHour >= 17,
+        lunch: currentHour < 12,
         dinner: isDinnerRestricted,
         snack: false
       });
@@ -74,8 +74,6 @@ const Main = () => {
 
     return () => clearInterval(intervalId);
   }, []);
-
-  useModal(foodData);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -95,7 +93,7 @@ const Main = () => {
       case 'breakfast':
         return '11시(오전 11시) 이후에는 기록할 수 없습니다';
       case 'lunch':
-        return '17시(오후 5시) 이후에는 기록할 수 없습니다';
+        return '12시(오후 12시) 이전에는 기록할 수 없습니다';
       case 'dinner':
         return '7시(오전 7시)부터 19시(오후 7시) 사이에는 기록할 수 없습니다';
       default:
@@ -122,28 +120,29 @@ const Main = () => {
           .replace(/\.$/, "")}
         </Text>
       </Row>
-      <Row justify="center" style={{ marginBottom: '40px' }}>
+      <Row justify="center" style={{ marginBottom: '20px' }}>
         <Text style={{ letterSpacing: '0.5px', fontSize: '18px', fontWeight: '500', fontFamily: 'Pretendard-500'}}>
         {new Date().toLocaleDateString("ko-KR", { weekday: "long" })}
         </Text>
       </Row>
       
-      <Row justify="center" style={{ marginBottom: '20px' }}>
+      <Row justify="center" style={{ marginBottom: '15px' }}>
         <div 
           onClick={showModal}
           style={{ 
             position: 'relative', 
-            cursor: 'pointer'
+            cursor: 'pointer',
+            padding: '10px'  // 클릭 영역 확장
           }}
         >
-          <BellOutline style={{ fontSize: '28px' }} />
+          <BellOutline style={{ fontSize: '32px' }} />
           {isModalAvailable && (
             <div style={{
               position: 'absolute',
               top: 0,
               right: 0,
-              width: '8px',
-              height: '8px',
+              width: '12px',
+              height: '12px',
               backgroundColor: 'red',
               borderRadius: '50%'
             }} />
