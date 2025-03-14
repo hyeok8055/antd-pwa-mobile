@@ -286,8 +286,8 @@ const CaloriEntry = () => {
               alignItems: 'center',
             }}
           >
-            <Text style={{ fontSize: '16px', fontFamily: 'Pretendard-500' }}>
-              선택한 모든 음식의 총 칼로리는?
+            <Text style={{ fontSize: '16px', fontFamily: 'Pretendard-700' }}>
+              선택한 모든 음식의 총 예상 칼로리는?
             </Text>
           </div>
           <InputNumber
@@ -319,7 +319,7 @@ const CaloriEntry = () => {
             width: '70%',
             textAlign: 'center'
           }}>
-            위에 선택한 모든 음식을 합한<br /> 총 칼로리를 입력해주세요
+            위에 선택한 모든 음식을 합한<br /> 총 예상 칼로리를 입력해주세요
           </Text>
           <Button
             style={{
