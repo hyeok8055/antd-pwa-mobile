@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Typography, InputNumber, Button, Flex, List, Image, Row } from 'antd';
+import { Typography, InputNumber, Button, List, Row } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
-import noImage from "../../assets/no-image.png";
 import { useFood } from "@/hook/useFood";
 import { useSelector } from 'react-redux';
 import { doc, getDoc } from 'firebase/firestore';
@@ -32,7 +31,7 @@ const CaloriEntry = () => {
   const [foodDetails, setFoodDetails] = useState([]);
   const [mealType, setMealType] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [redirectTimer, setRedirectTimer] = useState(5);
+  const [redirectTimer, setRedirectTimer] = useState(3);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);

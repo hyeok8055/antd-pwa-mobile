@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Row, Col, Button } from 'antd';
-import { Modal, Space } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';

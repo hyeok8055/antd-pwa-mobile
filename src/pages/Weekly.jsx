@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Typography, Flex, Row, Col } from 'antd';
-import { BankOutlined, FireOutlined, LoadingOutlined } from '@ant-design/icons';
+import { BankOutlined, FireOutlined } from '@ant-design/icons';
 import CalorieOverChart from '@/components/common/CalorieOverChart.jsx';
 import G2BarChart from '@/components/common/G2BarChart.jsx';
 import NutrientPiechart from '@/components/common/NutrientPiechart.jsx';

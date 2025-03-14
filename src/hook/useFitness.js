@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '@/firebaseconfig';
-import { collection, query, where, getDocs, doc, setDoc, orderBy, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, setDoc, orderBy, deleteDoc } from 'firebase/firestore';
 
 export const useFitness = (uid) => {
   const [fitnessData, setFitnessData] = useState([]);

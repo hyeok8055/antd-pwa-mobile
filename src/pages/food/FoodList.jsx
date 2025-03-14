@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Typography, Input, Row, Col, Select, Checkbox, Button, Modal, Form, InputNumber } from 'antd';
+import { Typography, Input, Row, Col, Select, Button, Modal, Form } from 'antd';
 import Fuse from "fuse.js";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import noImage from "../../assets/no-image.png";
+import { useParams, useNavigate } from "react-router-dom";
 import { CheckCircleTwoTone, PlusOutlined } from '@ant-design/icons';
 import { realtimeDb } from '../../firebaseconfig';
-import { ref, push, set, onValue } from "firebase/database";
+import { ref, set, onValue } from "firebase/database";
 import { useSelector, useDispatch } from 'react-redux';
 import { setFoods } from '../../redux/actions/foodActions';
 import { auth } from '../../firebaseconfig';

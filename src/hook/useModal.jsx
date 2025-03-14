@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Modal } from 'antd-mobile';
 import { Typography } from 'antd';
 
