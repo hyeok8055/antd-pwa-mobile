@@ -32,13 +32,22 @@ const CaloriEntry = () => {
   const [mealType, setMealType] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [redirectTimer, setRedirectTimer] = useState(3);
+  const [foodPortions, setFoodPortions] = useState({});
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const items = searchParams.get('items');
     const type = searchParams.get('type');
     if (items) {
-      setSelectedFoodNames(items.split(','));
+      const foodNames = items.split(',');
+      setSelectedFoodNames(foodNames);
+      
+      // 각 음식에 대해 기본 1인분으로 초기화
+      const initialPortions = {};
+      foodNames.forEach(name => {
+        initialPortions[name] = 1;
+      });
+      setFoodPortions(initialPortions);
     }
     if (type) {
       setMealType(type);
@@ -65,10 +74,12 @@ const CaloriEntry = () => {
   const calculateActualCalories = (foodDetails) => {
     return foodDetails.reduce((total, food) => {
       const weight = extractNumber(food.weight);
-      if (food && food.calories && !food.error) {
-        return total + (Number(food.calories) * (weight / 100));
-      }
-      return total;
+      const portion = foodPortions[food.name] || 1; // 인분 정보 사용
+      
+      // 칼로리 정보가 없거나 에러가 있는 경우 0으로 처리
+      const calories = food && food.calories && !isNaN(Number(food.calories)) ? Number(food.calories) : 0;
+      
+      return total + (calories * (weight / 100) * portion);
     }, 0);
   };
 
@@ -77,27 +88,35 @@ const CaloriEntry = () => {
     // setShowStats(false); // 명시적으로 showStats를 false로 설정
     try {
       const actualCalories = calculateActualCalories(foodDetails);
-      const difference = Math.abs(actualCalories - parseInt(estimatedCalories, 10));
+      const difference = Math.abs(actualCalories - parseInt(estimatedCalories, 10) || 0);
       setCalorieDifference(difference);
 
       const mappedFoods = foodDetails.map(food => {
         const weight = extractNumber(food.weight);
-        const ratio = weight / 100;
+        const portion = foodPortions[food.name] || 1; // 인분 정보 사용
+        const ratio = (weight / 100) * portion;
+        
+        // 모든 영양소 정보가 없는 경우 0으로 처리
+        const calories = food.calories && !isNaN(Number(food.calories)) ? Number(food.calories) : 0;
+        const carbs = food.nutrients?.carbs && !isNaN(Number(food.nutrients.carbs)) ? Number(food.nutrients.carbs) : 0;
+        const fat = food.nutrients?.fat && !isNaN(Number(food.nutrients.fat)) ? Number(food.nutrients.fat) : 0;
+        const protein = food.nutrients?.protein && !isNaN(Number(food.nutrients.protein)) ? Number(food.nutrients.protein) : 0;
         
         // 실제 섭취한 영양성분 계산
-        const actualCalories = food.calories ? Number(food.calories) * ratio : 0;
-        const actualCarbs = food.nutrients?.carbs ? Number(food.nutrients.carbs) * ratio : 0;
-        const actualFat = food.nutrients?.fat ? Number(food.nutrients.fat) * ratio : 0;
-        const actualProtein = food.nutrients?.protein ? Number(food.nutrients.protein) * ratio : 0;
+        const actualCalories = calories * ratio;
+        const actualCarbs = carbs * ratio;
+        const actualFat = fat * ratio;
+        const actualProtein = protein * ratio;
         
         return {
           name: food.name || '',
-          calories: actualCalories,  // 실제 섭취 칼로리
+          calories: actualCalories,
           weight: weight,
+          portion: portion,
           nutrients: {
-            carbs: actualCarbs,      // 실제 섭취 탄수화물
-            fat: actualFat,          // 실제 섭취 지방
-            protein: actualProtein    // 실제 섭취 단백질
+            carbs: actualCarbs,
+            fat: actualFat,
+            protein: actualProtein
           }
         };
       });
@@ -171,6 +190,14 @@ const CaloriEntry = () => {
     setEstimatedCalories(value);
   };
 
+  // 인분 변경 핸들러 추가
+  const handlePortionChange = (foodName, value) => {
+    setFoodPortions(prev => ({
+      ...prev,
+      [foodName]: value
+    }));
+  };
+
   return (
     <div style={{ minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'auto', paddingBottom: '20px' }}>
       {loading && !saveSuccess ? (
@@ -227,10 +254,20 @@ const CaloriEntry = () => {
               <List
                 dataSource={selectedFoodNames}
                 renderItem={(item) => (
-                  <List.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <List.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: '15px', fontFamily: 'Pretendard-600' }}>
                       {item}
                     </Text>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <InputNumber
+                        min={0.5}
+                        step={0.5}
+                        value={foodPortions[item] || 1}
+                        onChange={(value) => handlePortionChange(item, value)}
+                        style={{ width: '60px', marginLeft: '10px' }}
+                      />
+                      <Text style={{ marginLeft: '5px', fontSize: '14px' }}>인분</Text>
+                    </div>
                   </List.Item>
                 )}
               />

@@ -12,7 +12,6 @@ import { CheckCircleTwoTone, ClockCircleOutlined } from '@ant-design/icons';
 const { Text } = Typography;
 
 const Main = () => {
-  const today = dayjs();
   const uid = useSelector((state) => state.auth.user?.uid);
   const { foodData, loading, error } = useFood(uid);
   const [mealFlags, setMealFlags] = useState({

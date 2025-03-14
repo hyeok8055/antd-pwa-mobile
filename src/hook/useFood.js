@@ -67,12 +67,13 @@ export const useFood = () => {
         // 데이터 유효성 검사 및 기본값 설정
         const validFoods = (foods || []).map(food => ({
           name: food.name || '',
-          calories: Number(food.calories || 0),
-          weight: Number(food.weight || 0),
+          calories: !isNaN(Number(food.calories)) ? Number(food.calories) : 0,
+          weight: !isNaN(Number(food.weight)) ? Number(food.weight) : 0,
+          portion: !isNaN(Number(food.portion)) ? Number(food.portion) : 1,
           nutrients: {
-            carbs: Number(food.nutrients?.carbs || 0),
-            fat: Number(food.nutrients?.fat || 0),
-            protein: Number(food.nutrients?.protein || 0)
+            carbs: !isNaN(Number(food.nutrients?.carbs)) ? Number(food.nutrients.carbs) : 0,
+            fat: !isNaN(Number(food.nutrients?.fat)) ? Number(food.nutrients.fat) : 0,
+            protein: !isNaN(Number(food.nutrients?.protein)) ? Number(food.nutrients.protein) : 0
           }
         })).filter(food => food.name);
 
@@ -108,13 +109,32 @@ export const useFood = () => {
         const snapshot = await get(foodRef);
 
         if (snapshot.exists()) {
+          const foodData = snapshot.val();
+          // 데이터가 있지만 칼로리나 영양소 정보가 없는 경우 기본값 설정
           foodDetails.push({
             name: foodName,
-            ...snapshot.val()
+            calories: foodData.calories || 0,
+            weight: foodData.weight || '100g',
+            nutrients: {
+              carbs: foodData.nutrients?.carbs || 0,
+              fat: foodData.nutrients?.fat || 0,
+              protein: foodData.nutrients?.protein || 0
+            },
+            ...foodData
           });
         } else {
           console.log(`${foodName}에 대한 정보가 없습니다.`);
-          foodDetails.push({ name: foodName, error: '정보 없음' });
+          // 정보가 없는 경우 기본값으로 설정
+          foodDetails.push({ 
+            name: foodName, 
+            calories: 0,
+            weight: '100g',
+            nutrients: {
+              carbs: 0,
+              fat: 0,
+              protein: 0
+            }
+          });
         }
       }
       return foodDetails;
