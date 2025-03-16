@@ -266,6 +266,7 @@ export const useModal = (foodData, testMode = false) => {
 
     let mealType = null;
 
+    // 새로운 시간 기준으로 수정
     if (hours >= 6 && hours <= 10) {
       mealType = 'dinner';  // 전날 저녁 식사 결과
     } else if (hours >= 11 && hours <= 14) {

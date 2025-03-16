@@ -17,12 +17,12 @@ const getSnackMealType = () => {
   const now = new Date();
   const hours = now.getHours();
   
-  if (hours >= 6 && hours < 12) {
+  if (hours >= 0 && hours < 12) {
     return 'breakfast';
   } else if (hours >= 12 && hours < 18) {
     return 'lunch';
   } else {
-    // 18시부터 05시59분까지는 저녁
+    // 18시부터 23시59분까지는 저녁
     return 'dinner';
   }
 };

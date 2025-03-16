@@ -93,21 +93,23 @@ const Main = () => {
       // 시간 제한 로직 (24시간 형식 기준)
       // 아침식사: 06시부터 11시59분까지 기록 가능
       // 점심식사: 12시부터 17시59분까지 기록 가능
-      // 저녁식사: 18시부터 05시59분까지 기록 가능
+      // 저녁식사: 18시부터 23시59분까지 기록 가능
       
       // 현재 시간대 카테고리 설정
       if (currentHour >= 6 && currentHour < 12) {
         setCurrentTimeCategory('아침');
       } else if (currentHour >= 12 && currentHour < 18) {
         setCurrentTimeCategory('점심');
-      } else {
+      } else if (currentHour >= 18) {
         setCurrentTimeCategory('저녁');
+      } else {
+        setCurrentTimeCategory('새벽');
       }
       
       setTimeRestrictions({
         breakfast: currentHour < 6 || currentHour >= 12, // 6시부터 11시59분까지만 아침식사 가능
         lunch: currentHour < 12 || currentHour >= 18, // 12시부터 17시59분까지만 점심식사 가능
-        dinner: currentHour >= 6 && currentHour < 18, // 18시부터 05시59분까지만 저녁식사 가능
+        dinner: currentHour < 18 || currentHour >= 24, // 18시부터 23시59분까지만 저녁식사 가능
         snack: false, // 간식은 제한 없음
       });
     };
@@ -152,7 +154,7 @@ const Main = () => {
       case 'lunch':
         return '12시부터 17시59분까지만 기록 가능합니다';
       case 'dinner':
-        return '18시부터 05시59분까지만 기록 가능합니다';
+        return '18시부터 23시59분까지만 기록 가능합니다';
       default:
         return '';
     }
