@@ -12,6 +12,21 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// 시간대 기준으로 간식이 어느 식사에 포함되는지 결정
+const getSnackMealType = () => {
+  const now = new Date();
+  const hours = now.getHours();
+  
+  if (hours >= 6 && hours < 12) {
+    return 'breakfast';
+  } else if (hours >= 12 && hours < 18) {
+    return 'lunch';
+  } else {
+    // 18시부터 05시59분까지는 저녁
+    return 'dinner';
+  }
+};
+
 export const useFood = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -48,6 +63,7 @@ export const useFood = () => {
     }
   };
 
+  // 식사 또는 간식 데이터 저장
   const saveFoodData = useCallback(
     async (mealType, foods = [], estimatedCalories = null, actualCalories = null, selectedFoods = [], flag = 0) => {
       if (!uid || !mealType) {
@@ -76,14 +92,54 @@ export const useFood = () => {
             protein: !isNaN(Number(food.nutrients?.protein)) ? Number(food.nutrients.protein) : 0
           }
         })).filter(food => food.name);
+        
+        // 간식인 경우 시간대에 따라 식사 타입 결정
+        if (mealType === 'snacks') {
+          const targetMealType = getSnackMealType();
+          
+          // 기존 식사 데이터 가져오기
+          const existingMeal = currentData[targetMealType] || {
+            flag: targetMealType !== 'snacks' ? Number(flag) : 0,
+            foods: [],
+            estimatedCalories: 0,
+            actualCalories: 0,
+            selectedFoods: [],
+          };
 
-        currentData[mealType] = {
-          flag: mealType !== 'snacks' ? Number(flag) : Number(currentData[mealType]?.flag || 0),
-          foods: validFoods,
-          estimatedCalories: estimatedCalories !== null ? Number(estimatedCalories) : null,
-          actualCalories: actualCalories !== null ? Number(actualCalories) : null,
-          selectedFoods: selectedFoods || [],
-        };
+          // 기존 간식 데이터 누적 (백업용이 아닌 실제 누적)
+          const existingSnacks = currentData.snacks || {
+            foods: [],
+            estimatedCalories: 0,
+            actualCalories: 0,
+            selectedFoods: [],
+          };
+
+          // 간식 데이터도 누적되게 처리
+          currentData.snacks = {
+            foods: [...existingSnacks.foods, ...validFoods],
+            estimatedCalories: (existingSnacks.estimatedCalories || 0) + (estimatedCalories !== null ? Number(estimatedCalories) : 0),
+            actualCalories: (existingSnacks.actualCalories || 0) + (actualCalories !== null ? Number(actualCalories) : 0),
+            selectedFoods: [...(existingSnacks.selectedFoods || []), ...(selectedFoods || [])],
+          };
+          
+          // 식사 데이터에 간식 데이터 통합
+          currentData[targetMealType] = {
+            flag: Number(existingMeal.flag),
+            foods: [...existingMeal.foods, ...validFoods],
+            estimatedCalories: (existingMeal.estimatedCalories || 0) + (estimatedCalories !== null ? Number(estimatedCalories) : 0),
+            actualCalories: (existingMeal.actualCalories || 0) + (actualCalories !== null ? Number(actualCalories) : 0),
+            selectedFoods: [...(existingMeal.selectedFoods || []), ...(selectedFoods || [])],
+          };
+        } else {
+          // 일반 식사인 경우 기존 로직 유지
+          currentData[mealType] = {
+            flag: Number(flag),
+            foods: validFoods,
+            estimatedCalories: estimatedCalories !== null ? Number(estimatedCalories) : null,
+            actualCalories: actualCalories !== null ? Number(actualCalories) : null,
+            selectedFoods: selectedFoods || [],
+          };
+        }
 
         await setDoc(docRef, currentData, { merge: true });
         setFoodData(currentData);

@@ -1,8 +1,97 @@
 import { useCallback } from 'react';
 import { Modal } from 'antd-mobile';
 import { Typography } from 'antd';
+import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
+
+// // 칼로리 편차 모달을 직접 표시하는 함수를 외부에서도 사용할 수 있도록 export
+// export const showTestCalorieDifferenceModal = (mealType, mealData) => {
+//   const difference = mealData.actualCalories - mealData.estimatedCalories;
+//   const isPositive = difference > 0;
+//   const absValue = Math.abs(difference).toFixed(0);
+  
+//   // 편차에 따른 색상과 설명 텍스트 설정
+//   const differenceColor = isPositive ? '#ff4d4f' : '#1677ff';
+//   const differenceText = isPositive 
+//     ? '예측보다 더 많이 섭취했습니다'
+//     : difference < 0 
+//       ? '예측보다 더 적게 섭취했습니다' 
+//       : '예측과 동일하게 섭취했습니다';
+  
+//   // 편차에 따른 배경색 설정 (더 부드러운 톤)
+//   const backgroundColor = isPositive 
+//     ? 'rgba(255, 77, 79, 0.08)' 
+//     : difference < 0 
+//       ? 'rgba(22, 119, 255, 0.08)' 
+//       : '#f8f8f8';
+
+//   let content = (
+//     <>
+//       <div style={{ 
+//         display: 'flex', 
+//         flexDirection: 'column',
+//         justifyContent: 'center', 
+//         alignItems: 'center', 
+//         width: '100%',
+//         marginTop: '15px'
+//       }}>
+//         <Text style={{ 
+//           fontSize: '18px', 
+//           textAlign: 'center', 
+//           marginBottom: '15px',
+//           color: differenceColor,
+//           fontWeight: '600'
+//         }}>
+//           {differenceText}
+//         </Text>
+        
+//         {/* 편차 표시 패널 */}
+//         <div style={{
+//           backgroundColor: backgroundColor,
+//           borderRadius: '10px',
+//           padding: '15px 20px',
+//           width: '90%',
+//           display: 'flex',
+//           justifyContent: 'center',
+//           alignItems: 'center',
+//           boxShadow: isPositive || difference < 0 ? `0 2px 8px ${differenceColor}20` : 'none'
+//         }}>
+//           <Text 
+//             style={{ 
+//               fontSize: '24px', 
+//               fontWeight: '700', 
+//               color: differenceColor,
+//               display: 'flex',
+//               alignItems: 'center'
+//             }}
+//           >
+//             {isPositive ? (
+//               <ArrowUpOutlined style={{ marginRight: '8px', fontSize: '22px' }} />
+//             ) : difference < 0 ? (
+//               <ArrowDownOutlined style={{ marginRight: '8px', fontSize: '22px' }} />
+//             ) : null}
+//             {isPositive ? '+' : difference < 0 ? '-' : '±'}{absValue}kcal
+//           </Text>
+//         </div>
+//       </div>
+//     </>
+//   );
+
+//   try {
+//     Modal.alert({
+//       title: `${
+//         mealType === 'breakfast' ? '아침' : 
+//         mealType === 'lunch' ? '점심' : '저녁'
+//       } 식사 결과 (테스트)`,
+//       content: content,
+//       confirmText: '확인했습니다.',
+//     });
+//   } catch (error) {
+//     console.error('모달 표시 중 오류 발생:', error);
+//     alert('모달 표시 중 오류가 발생했습니다.');
+//   }
+// };
 
 export const useModal = (foodData, testMode = false) => {
   const calculateCalorieDifference = useCallback((mealType) => {
@@ -14,49 +103,49 @@ export const useModal = (foodData, testMode = false) => {
     return meal.actualCalories - meal.estimatedCalories;
   }, [foodData]);
 
-  const calculateSnackCalorieDifference = useCallback(() => {
-    if (!foodData?.snacks) return null;
-    
-    const snacks = foodData.snacks;
-    if (!snacks.actualCalories || !snacks.estimatedCalories) return null;
-    
-    return snacks.actualCalories - snacks.estimatedCalories;
-  }, [foodData]);
-
-  const showCalorieDifferenceModal = useCallback((mealType, includeSnacks = false) => {
-    // console.log('showCalorieDifferenceModal 호출됨:', mealType, includeSnacks);
-    
+  const showCalorieDifferenceModal = useCallback((mealType) => {
     // 테스트 모드일 때는 기본값 표시
     if (testMode) {
-      // console.log('테스트 모드 모달 표시');
       const testContent = (
         <>
           <div style={{ 
             display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            width: '100%',
-            marginTop: '10px'
-          }}>실제 섭취 칼로리와<br/>나의 예측의 차이는</div>
-          <div style={{ 
-            display: 'flex', 
+            flexDirection: 'column',
             justifyContent: 'center', 
             alignItems: 'center', 
             width: '100%',
             marginTop: '10px'
           }}>
-            <Text 
-              style={{ 
-                fontSize: '30px', 
-                fontWeight: '900', 
-                fontFamily: 'Pretendard-900', 
-                color: 'rgb(22, 119, 255)',
-                textAlign: 'center',
-                width: '100%'
-              }}
-            >
-              ±0kcal
+            <Text style={{ 
+              fontSize: '18px', 
+              textAlign: 'center', 
+              marginBottom: '15px',
+              color: '#888',
+              fontWeight: '600' 
+            }}>
+              예측과 실제 섭취 칼로리가 동일합니다
             </Text>
+            <div style={{
+              backgroundColor: '#f8f8f8',
+              borderRadius: '10px',
+              padding: '15px 20px',
+              width: '90%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <Text 
+                style={{ 
+                  fontSize: '24px', 
+                  fontWeight: '700', 
+                  color: '#888',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                ±0kcal
+              </Text>
+            </div>
           </div>
         </>
       );
@@ -70,14 +159,10 @@ export const useModal = (foodData, testMode = false) => {
     }
 
     // 실제 데이터 확인
-    // console.log('식사 데이터 확인:', mealType, foodData?.[mealType]);
-    
     const difference = calculateCalorieDifference(mealType);
-    // console.log('칼로리 차이:', difference);
     
     // 차이가 null이면 기본 메시지 표시
     if (difference === null) {
-      // console.log('칼로리 차이가 null임');
       Modal.alert({
         title: '데이터 없음',
         content: '해당 식사의 칼로리 데이터가 없습니다.',
@@ -87,72 +172,75 @@ export const useModal = (foodData, testMode = false) => {
     }
 
     const isPositive = difference > 0;
-    const absValue = Math.abs(difference).toFixed(2);
+    const absValue = Math.abs(difference).toFixed(0);
+    
+    // 편차에 따른 색상과 설명 텍스트 설정
+    const differenceColor = isPositive ? '#ff4d4f' : '#1677ff';
+    const differenceText = isPositive 
+      ? '예측보다 더 많이 섭취했습니다'
+      : difference < 0 
+        ? '예측보다 더 적게 섭취했습니다' 
+        : '예측과 동일하게 섭취했습니다';
+    
+    // 편차에 따른 배경색 설정 (더 부드러운 톤)
+    const backgroundColor = isPositive 
+      ? 'rgba(255, 77, 79, 0.08)' 
+      : difference < 0 
+        ? 'rgba(22, 119, 255, 0.08)' 
+        : '#f8f8f8';
 
     let content = (
       <>
         <div style={{ 
           display: 'flex', 
+          flexDirection: 'column',
           justifyContent: 'center', 
           alignItems: 'center', 
           width: '100%',
-          marginTop: '10px'
-        }}>실제 섭취 칼로리와 나의 예측의 차이는</div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          width: '100%',
-          marginTop: '10px'
+          marginTop: '15px'
         }}>
-          <Text 
-            style={{ 
-              fontSize: '30px', 
-              fontWeight: '900', 
-              fontFamily: 'Pretendard-900', 
-              color: isPositive ? 'red' : 'rgb(22, 119, 255)',
-              textAlign: 'center',
-              width: '100%'
-            }}
-          >
-            {isPositive ? '+' : '-'}{absValue}kcal
+          <Text style={{ 
+            fontSize: '18px', 
+            textAlign: 'center', 
+            marginBottom: '15px',
+            color: differenceColor,
+            fontWeight: '600'
+          }}>
+            {differenceText}
           </Text>
+          
+          {/* 편차 표시 패널 */}
+          <div style={{
+            backgroundColor: backgroundColor,
+            borderRadius: '10px',
+            padding: '15px 20px',
+            width: '90%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            boxShadow: isPositive || difference < 0 ? `0 2px 8px ${differenceColor}20` : 'none'
+          }}>
+            <Text 
+              style={{ 
+                fontSize: '24px', 
+                fontWeight: '700', 
+                color: differenceColor,
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              {isPositive ? (
+                <ArrowUpOutlined style={{ marginRight: '8px', fontSize: '22px' }} />
+              ) : difference < 0 ? (
+                <ArrowDownOutlined style={{ marginRight: '8px', fontSize: '22px' }} />
+              ) : null}
+              {isPositive ? '+' : difference < 0 ? '-' : '±'}{absValue}kcal
+            </Text>
+          </div>
         </div>
       </>
     );
 
-    // 저녁 식사와 함께 간식 정보 표시
-    if (includeSnacks) {
-      // console.log('간식 데이터 확인:', foodData?.snacks);
-      const snackDifference = calculateSnackCalorieDifference();
-      // console.log('간식 칼로리 차이:', snackDifference);
-      
-      if (snackDifference !== null) {
-        const isSnackPositive = snackDifference > 0;
-        const absSnackValue = Math.abs(snackDifference).toFixed(2);
-        content = (
-          <>
-            {content}
-            <div style={{ marginTop: '20px' }}>
-              <div>간식의 실제 섭취 칼로리와 나의 예측의 차이는</div>
-              <Text 
-                style={{ 
-                  fontSize: '30px', 
-                  fontWeight: '900', 
-                  fontFamily: 'Pretendard-900', 
-                  color: isSnackPositive ? 'red' : 'rgb(22, 119, 255)'
-                }}
-              >
-                {isSnackPositive ? '+' : '-'}{absSnackValue}kcal
-              </Text>
-            </div>
-          </>
-        );
-      }
-    }
-
-    // console.log('최종 모달 내용 생성 완료');
-    
     try {
       Modal.alert({
         title: `${mealType === 'dinner' ? '어제' : '지난'} ${
@@ -162,27 +250,24 @@ export const useModal = (foodData, testMode = false) => {
         content: content,
         confirmText: '확인했습니다.',
       });
-      // console.log('Modal.alert 호출 완료');
     } catch (error) {
       console.error('모달 표시 중 오류 발생:', error);
       // 기본 alert로 대체
       alert('식사 결과를 확인할 수 없습니다. 오류가 발생했습니다.');
     }
-  }, [testMode, calculateCalorieDifference, calculateSnackCalorieDifference, foodData]);
+  }, [testMode, calculateCalorieDifference, foodData]);
 
   // 모달을 표시할 수 있는지 확인하는 함수
   const checkModalAvailable = useCallback(() => {
-    if (testMode) return { available: true, mealType: 'lunch', includeSnacks: true };
+    if (testMode) return { available: true, mealType: 'lunch' };
 
     const now = new Date();
     const hours = now.getHours();
 
     let mealType = null;
-    let includeSnacks = false;
 
     if (hours >= 6 && hours <= 10) {
       mealType = 'dinner';  // 전날 저녁 식사 결과
-      includeSnacks = true; // 전날 간식도 함께 표시
     } else if (hours >= 11 && hours <= 14) {
       mealType = 'breakfast';  // 아침 식사 결과
     } else if (hours >= 17 && hours <= 20) {
@@ -193,39 +278,28 @@ export const useModal = (foodData, testMode = false) => {
     const hasData = mealType && foodData?.[mealType] && 
       (foodData[mealType].actualCalories !== undefined && 
        foodData[mealType].estimatedCalories !== undefined);
-    
-    // 간식 데이터 확인 (저녁 식사 결과와 함께 표시되는 경우)
-    const hasSnackData = includeSnacks && foodData?.snacks && 
-      (foodData.snacks.actualCalories !== undefined && 
-       foodData.snacks.estimatedCalories !== undefined);
 
     return { 
-      available: hasData || (includeSnacks && hasSnackData), 
-      mealType, 
-      includeSnacks,
-      isValidTime: mealType !== null // 유효한 시간대인지 여부 추가
+      available: hasData, 
+      mealType,
+      isValidTime: mealType !== null // 유효한 시간대인지 여부
     };
   }, [foodData, testMode]);
 
   // 모달을 표시하는 함수
   const showModal = useCallback(() => {
-    // console.log('showModal 함수 호출됨');
     const modalInfo = checkModalAvailable();
-    // console.log('모달 정보:', modalInfo);
     
-    const { available, mealType, includeSnacks, isValidTime } = modalInfo;
+    const { available, mealType, isValidTime } = modalInfo;
     
     if (testMode) {
-      // console.log('테스트 모드에서 모달 표시');
-      showCalorieDifferenceModal(mealType, includeSnacks);
+      showCalorieDifferenceModal(mealType);
       return;
     }
     
     if (available && mealType) {
-      // console.log('유효한 데이터로 모달 표시');
-      showCalorieDifferenceModal(mealType, includeSnacks);
+      showCalorieDifferenceModal(mealType);
     } else {
-      // console.log('모달 표시 불가 - 시간 또는 데이터 문제');
       // 조회 가능한 시간이 아니거나 식사 기록이 없는 경우
       const now = new Date();
       const hours = now.getHours();
@@ -248,7 +322,7 @@ export const useModal = (foodData, testMode = false) => {
             <Text style={{ fontSize: 14, color: '#666', lineHeight: 1.8 }}>
               - 아침 식사 결과: 오전 11시 ~ 오후 2시<br />
               - 점심 식사 결과: 오후 5시 ~ 오후 8시<br />
-              - 저녁/간식 결과: 오전 6시 ~ 오전 10시
+              - 저녁 식사 결과: 오전 6시 ~ 오전 10시
             </Text>
           </div>
         );
@@ -261,7 +335,7 @@ export const useModal = (foodData, testMode = false) => {
         };
         
         if (hours >= 6 && hours <= 10) {
-          message = <Text style={messageStyle}>어제 저녁 식사 또는 간식 기록이 없습니다.</Text>;
+          message = <Text style={messageStyle}>어제 저녁 식사 기록이 없습니다.</Text>;
         } else if (hours >= 11 && hours <= 14) {
           message = <Text style={messageStyle}>아침 식사 기록이 없습니다.</Text>;
         } else if (hours >= 17 && hours <= 20) {
@@ -269,7 +343,6 @@ export const useModal = (foodData, testMode = false) => {
         }
       }
       
-      console.log('표시할 메시지:', message);
       Modal.alert({
         title: '식사 결과 조회 불가',
         content: message,

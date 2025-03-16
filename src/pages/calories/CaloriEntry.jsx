@@ -20,7 +20,6 @@ const { Text } = Typography;
 
 const CaloriEntry = () => {
   const [loading, setLoading] = useState(false);
-  // const [showStats, setShowStats] = useState(false); // 주석 처리
   const [estimatedCalories, setEstimatedCalories] = useState("");
   const [calorieDifference, setCalorieDifference] = useState(null);
   const location = useLocation();
@@ -85,7 +84,6 @@ const CaloriEntry = () => {
 
   const handleClick = async () => {
     setLoading(true);
-    // setShowStats(false); // 명시적으로 showStats를 false로 설정
     try {
       const actualCalories = calculateActualCalories(foodDetails);
       const difference = Math.abs(actualCalories - parseInt(estimatedCalories, 10) || 0);
@@ -121,46 +119,17 @@ const CaloriEntry = () => {
         };
       });
 
-      if (mealType === 'snacks') {
-        const today = getTodayDate();
-        const docRef = doc(db, 'users', uid, 'foods', today);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const currentData = docSnap.data();
-          const currentSnacks = currentData.snacks || {
-            foods: [],
-            estimatedCalories: 0,
-            actualCalories: 0,
-            selectedFoods: []
-          };
-
-          await saveFoodData(
-            'snacks',
-            [...currentSnacks.foods, ...mappedFoods],
-            Number(currentSnacks.estimatedCalories || 0) + Number(estimatedCalories),
-            Number(currentSnacks.actualCalories || 0) + actualCalories,
-            [...currentSnacks.selectedFoods, ...selectedFoodNames]
-          );
-        } else {
-          await saveFoodData(
-            'snacks',
-            mappedFoods,
-            Number(estimatedCalories),
-            actualCalories,
-            selectedFoodNames
-          );
-        }
-      } else {
-        await saveFoodData(
-          mealType,
-          mappedFoods,
-          Number(estimatedCalories),
-          actualCalories,
-          selectedFoodNames,
-          1
-        );
-      }
+      // 모든 식사 타입(아침/점심/저녁/간식)에 대해 동일한 저장 로직 사용
+      // useFood 훅에서 간식인 경우 시간에 따라 적절한 식사 타입에 데이터를 통합함
+      await saveFoodData(
+        mealType,
+        mappedFoods,
+        Number(estimatedCalories),
+        actualCalories,
+        selectedFoodNames,
+        mealType !== 'snacks' ? 1 : 0 // 간식은 flag 값이 0
+      );
+      
       setSaveSuccess(true);
       setLoading(false);
     } catch (error) {
