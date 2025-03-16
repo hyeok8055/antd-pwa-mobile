@@ -8,6 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import UpdateNotification from './components/UpdateNotification';
 
 
 const App = () => {
@@ -140,14 +141,15 @@ const ConditionalHeaderFooter = () => {
           <Header />
         </div>
       )}
-      <div className={`flex-1 ${!shouldHideHeaderFooter ? 'pb-[60px]' : ''}`}>
+      <div className={`flex-1 ${!shouldHideHeaderFooter ? 'mb-[70px]' : ''}`}>
         <AppRoutes />
       </div>
       {!shouldHideHeaderFooter && (
-        <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white z-50 border-t border-gray-200">
+        <div className="h-[70px] fixed bottom-0 left-0 right-0 bg-white border-t">
           <Footer />
         </div>
       )}
+      <UpdateNotification />
     </div>
   );
 };
