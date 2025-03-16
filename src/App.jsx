@@ -136,15 +136,15 @@ const ConditionalHeaderFooter = () => {
   return (
     <div className="app h-screen overflow-y-auto overflow-x-hidden flex flex-col">
       {!shouldHideHeaderFooter && (
-        <div className="h-[5%] z-10">
+        <div className="h-[60px] z-10">
           <Header />
         </div>
       )}
-      <div className="flex-1 h-[88%]">
+      <div className={`flex-1 ${!shouldHideHeaderFooter ? 'pb-[60px]' : ''}`}>
         <AppRoutes />
       </div>
       {!shouldHideHeaderFooter && (
-        <div className="fixed bottom-0 left-0 right-0 h-[7%] bg-white shadow-md flex items-center border-t border-gray-300">
+        <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white z-50 border-t border-gray-200">
           <Footer />
         </div>
       )}

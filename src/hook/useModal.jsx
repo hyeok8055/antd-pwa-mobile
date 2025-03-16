@@ -24,11 +24,11 @@ export const useModal = (foodData, testMode = false) => {
   }, [foodData]);
 
   const showCalorieDifferenceModal = useCallback((mealType, includeSnacks = false) => {
-    console.log('showCalorieDifferenceModal 호출됨:', mealType, includeSnacks);
+    // console.log('showCalorieDifferenceModal 호출됨:', mealType, includeSnacks);
     
     // 테스트 모드일 때는 기본값 표시
     if (testMode) {
-      console.log('테스트 모드 모달 표시');
+      // console.log('테스트 모드 모달 표시');
       const testContent = (
         <>
           <div style={{ 
@@ -70,14 +70,14 @@ export const useModal = (foodData, testMode = false) => {
     }
 
     // 실제 데이터 확인
-    console.log('식사 데이터 확인:', mealType, foodData?.[mealType]);
+    // console.log('식사 데이터 확인:', mealType, foodData?.[mealType]);
     
     const difference = calculateCalorieDifference(mealType);
-    console.log('칼로리 차이:', difference);
+    // console.log('칼로리 차이:', difference);
     
     // 차이가 null이면 기본 메시지 표시
     if (difference === null) {
-      console.log('칼로리 차이가 null임');
+      // console.log('칼로리 차이가 null임');
       Modal.alert({
         title: '데이터 없음',
         content: '해당 식사의 칼로리 데이터가 없습니다.',
@@ -123,9 +123,9 @@ export const useModal = (foodData, testMode = false) => {
 
     // 저녁 식사와 함께 간식 정보 표시
     if (includeSnacks) {
-      console.log('간식 데이터 확인:', foodData?.snacks);
+      // console.log('간식 데이터 확인:', foodData?.snacks);
       const snackDifference = calculateSnackCalorieDifference();
-      console.log('간식 칼로리 차이:', snackDifference);
+      // console.log('간식 칼로리 차이:', snackDifference);
       
       if (snackDifference !== null) {
         const isSnackPositive = snackDifference > 0;
@@ -151,7 +151,7 @@ export const useModal = (foodData, testMode = false) => {
       }
     }
 
-    console.log('최종 모달 내용 생성 완료');
+    // console.log('최종 모달 내용 생성 완료');
     
     try {
       Modal.alert({
@@ -162,7 +162,7 @@ export const useModal = (foodData, testMode = false) => {
         content: content,
         confirmText: '확인했습니다.',
       });
-      console.log('Modal.alert 호출 완료');
+      // console.log('Modal.alert 호출 완료');
     } catch (error) {
       console.error('모달 표시 중 오류 발생:', error);
       // 기본 alert로 대체
@@ -180,12 +180,12 @@ export const useModal = (foodData, testMode = false) => {
     let mealType = null;
     let includeSnacks = false;
 
-    if (hours >= 7 && hours <= 9) {
+    if (hours >= 6 && hours <= 10) {
       mealType = 'dinner';  // 전날 저녁 식사 결과
       includeSnacks = true; // 전날 간식도 함께 표시
-    } else if (hours >= 11 && hours <= 12) {
+    } else if (hours >= 11 && hours <= 14) {
       mealType = 'breakfast';  // 아침 식사 결과
-    } else if (hours >= 17 && hours <= 18) {
+    } else if (hours >= 17 && hours <= 20) {
       mealType = 'lunch';  // 점심 식사 결과
     }
 
@@ -209,23 +209,23 @@ export const useModal = (foodData, testMode = false) => {
 
   // 모달을 표시하는 함수
   const showModal = useCallback(() => {
-    console.log('showModal 함수 호출됨');
+    // console.log('showModal 함수 호출됨');
     const modalInfo = checkModalAvailable();
-    console.log('모달 정보:', modalInfo);
+    // console.log('모달 정보:', modalInfo);
     
     const { available, mealType, includeSnacks, isValidTime } = modalInfo;
     
     if (testMode) {
-      console.log('테스트 모드에서 모달 표시');
+      // console.log('테스트 모드에서 모달 표시');
       showCalorieDifferenceModal(mealType, includeSnacks);
       return;
     }
     
     if (available && mealType) {
-      console.log('유효한 데이터로 모달 표시');
+      // console.log('유효한 데이터로 모달 표시');
       showCalorieDifferenceModal(mealType, includeSnacks);
     } else {
-      console.log('모달 표시 불가 - 시간 또는 데이터 문제');
+      // console.log('모달 표시 불가 - 시간 또는 데이터 문제');
       // 조회 가능한 시간이 아니거나 식사 기록이 없는 경우
       const now = new Date();
       const hours = now.getHours();
@@ -246,9 +246,9 @@ export const useModal = (foodData, testMode = false) => {
             </Text>
             <br />
             <Text style={{ fontSize: 14, color: '#666', lineHeight: 1.8 }}>
-              - 아침 식사 결과: 오전 11시 ~ 12시<br />
-              - 점심 식사 결과: 오후 5시 ~ 6시<br />
-              - 저녁/간식 결과: 오전 7시 ~ 9시
+              - 아침 식사 결과: 오전 11시 ~ 오후 2시<br />
+              - 점심 식사 결과: 오후 5시 ~ 오후 8시<br />
+              - 저녁/간식 결과: 오전 6시 ~ 오전 10시
             </Text>
           </div>
         );
@@ -260,11 +260,11 @@ export const useModal = (foodData, testMode = false) => {
           lineHeight: 1.5 
         };
         
-        if (hours >= 7 && hours <= 9) {
+        if (hours >= 6 && hours <= 10) {
           message = <Text style={messageStyle}>어제 저녁 식사 또는 간식 기록이 없습니다.</Text>;
-        } else if (hours >= 11 && hours <= 12) {
+        } else if (hours >= 11 && hours <= 14) {
           message = <Text style={messageStyle}>아침 식사 기록이 없습니다.</Text>;
-        } else if (hours >= 17 && hours <= 18) {
+        } else if (hours >= 17 && hours <= 20) {
           message = <Text style={messageStyle}>점심 식사 기록이 없습니다.</Text>;
         }
       }

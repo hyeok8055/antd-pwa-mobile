@@ -201,18 +201,19 @@ const CaloriEntry = () => {
   return (
     <div style={{ minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'auto', paddingBottom: '20px' }}>
       {loading && !saveSuccess ? (
-        <div style={{ marginTop: '60%' }}>
+        <div style={{ marginTop: '60%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <LoadingOutlined style={{ fontSize: 48, color: '#5FDD9D' }} spin />
+          <Text style={{ marginTop: 15, color: '#666', fontFamily: 'Pretendard-500' }}>기록 중입니다...</Text>
         </div>
       ) : saveSuccess ? (
-        <div style={{ width: '80%', maxWidth: '300px', marginTop: '50%' }}>
+        <div style={{ width: '80%', maxWidth: '300px', marginTop: '40%', textAlign: 'center' }}>
           <Result
             status='success'
-            title='기록 완료'
-            description='기록이 정상적으로 완료되었습니다.'
+            title={<Text style={{ fontSize: '24px', fontWeight: '700', color: '#5FDD9D', fontFamily: 'Pretendard-700' }}>기록 완료</Text>}
+            description={<Text style={{ fontSize: '16px', color: '#666', fontFamily: 'Pretendard-500' }}>기록이 정상적으로 완료되었습니다.</Text>}
           />
-          <div style={{ textAlign: 'center', marginTop: 10 }}>
-            <Text style={{ fontSize: '14px', color: '#888', fontFamily: 'Pretendard-500' }}>
+          <div style={{ textAlign: 'center', marginTop: 15 }}>
+            <Text style={{ fontSize: '16px', color: '#888', fontFamily: 'Pretendard-500' }}>
               {redirectTimer}초 뒤에 메인 페이지로 돌아갑니다.
             </Text>
           </div>
@@ -224,38 +225,59 @@ const CaloriEntry = () => {
               칼로리 편차 확인하기
             </Text>
           </div>
-          <Row direction="column" justify='center' align='Row-start' style={{ marginBottom: 20, width: '100%', height: 'auto', minHeight: '120px' }}>
-            <div
-              style={{
-                height: '40px',
-                width: '70%',
+          
+          {/* 선택한 음식 목록 섹션 */}
+          <div style={{ 
+            width: '90%', 
+            backgroundColor: 'white', 
+            borderRadius: '15px', 
+            padding: '15px', 
+            boxShadow: '0 4px 8px rgba(0,0,0,0.08)',
+            marginBottom: '25px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '15px'
+            }}>
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
                 backgroundColor: '#5FDD9D',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: '16px', fontFamily: 'Pretendard-500' }}>
-                선택한 음식 목록
+                marginRight: '10px'
+              }}>
+                <Text style={{ color: 'white', fontWeight: '800', fontSize: '15px' }}>1</Text>
+              </div>
+              <Text style={{ fontSize: '18px', fontWeight: '700', fontFamily: 'Pretendard-700' }}>
+                선택한 음식 ({selectedFoodNames.length}개)
               </Text>
             </div>
+            
             <div style={{
-              width: '70%',
-              maxHeight: '240px',
+              maxHeight: '200px',
               overflowY: 'auto',
-              marginTop: '10px',
-              padding: '5px',
-              backgroundColor: '#f0f0f0',
-              borderRadius: '8px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              backgroundColor: '#f9f9f9',
+              borderRadius: '10px',
+              padding: '10px',
             }}>
               <List
                 dataSource={selectedFoodNames}
                 renderItem={(item) => (
-                  <List.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: '15px', fontFamily: 'Pretendard-600' }}>
+                  <List.Item style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    backgroundColor: 'white',
+                    marginBottom: '8px', 
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}>
+                    <Text style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'Pretendard-600' }}>
                       {item}
                     </Text>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -264,7 +286,11 @@ const CaloriEntry = () => {
                         step={0.5}
                         value={foodPortions[item] || 1}
                         onChange={(value) => handlePortionChange(item, value)}
-                        style={{ width: '60px', marginLeft: '10px' }}
+                        style={{ 
+                          width: '65px',
+                          borderRadius: '6px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                        }}
                       />
                       <Text style={{ marginLeft: '5px', fontSize: '14px' }}>인분</Text>
                     </div>
@@ -272,96 +298,97 @@ const CaloriEntry = () => {
                 )}
               />
             </div>
-          </Row>
-          <div
-            style={{
-              height: '40px',
-              width: '70%',
-              backgroundColor: '#5FDD9D',
-              borderRadius: '8px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              marginTop: 80,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ fontSize: '16px', fontFamily: 'Pretendard-700' }}>
-              선택한 모든 음식의 총 예상 칼로리는?
-            </Text>
           </div>
-          <InputNumber
-            placeholder="총 예상 칼로리 입력"
-            suffix="Kcal"
-            value={estimatedCalories}
-            onChange={handleInputChange}
-            disabled={loading}
-            style={{
-              width: '70%',
-              height: '50px',
-              fontSize: '16px',
-              fontFamily: 'Pretendard-500',
-              borderRadius: '8px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              marginTop: 20,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingLeft: 35,
-              paddingRight: 10,
-            }}
-          />
-          <Text style={{ 
-            fontSize: '14px', 
-            color: '#888', 
-            fontFamily: 'Pretendard-400',
-            marginTop: 8,
-            width: '70%',
-            textAlign: 'center'
+          
+          {/* 예상 칼로리 입력 섹션 */}
+          <div style={{ 
+            width: '90%', 
+            backgroundColor: 'white', 
+            borderRadius: '15px', 
+            padding: '15px', 
+            boxShadow: '0 4px 8px rgba(0,0,0,0.08)',
+            marginBottom: '25px'
           }}>
-            위에 선택한 모든 음식을 합한<br /> 총 예상 칼로리를 입력해주세요
-          </Text>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '15px'
+            }}>
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: '#5FDD9D',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: '10px'
+              }}>
+                <Text style={{ color: 'white', fontWeight: '800', fontSize: '15px' }}>2</Text>
+              </div>
+              <Text style={{ fontSize: '18px', fontWeight: '700', fontFamily: 'Pretendard-700' }}>
+                예상 칼로리 입력
+              </Text>
+            </div>
+            
+            <Text style={{ fontSize: '16px', color: '#666', fontFamily: 'Pretendard-500', marginBottom: '15px', display: 'block' }}>
+              선택한 모든 음식을 합한 총 예상 칼로리를 입력해주세요
+            </Text>
+            
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center' 
+            }}>
+              <InputNumber
+                placeholder="예상 칼로리 입력"
+                suffix="Kcal"
+                value={estimatedCalories}
+                onChange={handleInputChange}
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  height: '50px',
+                  fontSize: '18px',
+                  fontFamily: 'Pretendard-600',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  marginBottom: '10px',
+                  textAlign: 'center',
+                }}
+              />
+              <Text style={{ fontSize: '14px', color: '#888', textAlign: 'center' }}>
+                정확한 값을 모른다면 최대한 가깝게 추정해보세요
+              </Text>
+            </div>
+          </div>
+          
+          {/* 결과 기록 버튼 */}
           <Button
             style={{
-              height: '50px',
-              width: '40%',
-              backgroundColor: '#5FDD9D',
-              borderRadius: '8px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              marginTop: 20,
-              marginBottom: 30,
+              height: '55px',
+              width: '90%',
+              backgroundColor: estimatedCalories ? '#5FDD9D' : '#e0e0e0',
+              color: estimatedCalories ? 'white' : '#999',
+              borderRadius: '10px',
+              boxShadow: estimatedCalories ? '0 4px 8px rgba(95, 221, 157, 0.3)' : 'none',
+              marginTop: '20px',
+              marginBottom: '5%',
+              border: 'none',
+              transition: 'all 0.3s ease'
             }}
             onClick={handleClick}
-            disabled={loading}
+            disabled={loading || !estimatedCalories}
           >
-            <Text style={{ color: 'black', fontSize: '18px', fontFamily: 'Pretendard-700' }}>결과 기록하기</Text>
+            <Text style={{ 
+              color: estimatedCalories ? 'white' : '#999', 
+              fontSize: '18px', 
+              fontWeight: '700', 
+              fontFamily: 'Pretendard-700' 
+            }}>
+              결과 기록하기
+            </Text>
           </Button>
-          {/* {showStats && ( // 주석 처리 */}
-          {/*  <div */}
-          {/*    style={{ */}
-          {/*      height: '120px', */}
-          {/*      width: '65%', */}
-          {/*      backgroundColor: '#f0f0f0', */}
-          {/*      borderRadius: '14px', */}
-          {/*      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', */}
-          {/*      marginTop: 70, */}
-          {/*      display: 'flex', */}
-          {/*      flexDirection: 'column', */}
-          {/*      alignItems: 'center', */}
-          {/*      justifyContent: 'center', */}
-          {/*    }} */}
-          {/*  > */}
-          {/*    <div style={{ textAlign: 'center' }}> */}
-          {/*      <Text style={{ fontSize: '16px', fontFamily: 'Pretendard-500' }}>칼로리 차이 계산결과는</Text> */}
-          {/*    </div> */}
-          {/*    <div style={{ textAlign: 'center' }}> */}
-          {/*      <Text style={{ fontSize: '45px', color: '#FF4D4F', fontFamily: 'Pretendard-800' }}> */}
-          {/*        {calorieDifference} kcal<br /> */}
-          {/*      </Text> */}
-          {/*      <Text style={{ fontSize: '14px', color: '#888', fontFamily: 'Pretendard-400' }}>예측값 대비 실제값의 차이</Text> */}
-          {/*    </div> */}
-          {/*  </div> */}
-          {/* )} */}
         </div>
       )}
     </div>

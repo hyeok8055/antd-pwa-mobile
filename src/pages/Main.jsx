@@ -48,21 +48,20 @@ const Main = () => {
       console.log('현재 시간(시, 24시간 형식):', currentHour);
       
       // 시간 제한 로직 (24시간 형식 기준)
-      // 아침식사: 11시(오전 11시) 이후 제한
-      // 점심식사: 12시(오후 12시) 이전 제한
-      // 저녁식사: 7시(오전 7시)부터 19시(오후 7시) 사이 제한
-      const isDinnerRestricted = currentHour >= 7 && currentHour < 19;
+      // 아침식사: 09시부터 11시까지 기록 가능
+      // 점심식사: 12시부터 17시까지 기록 가능
+      // 저녁식사: 18시부터 23시59분까지 기록 가능
       
       setTimeRestrictions({
-        breakfast: currentHour >= 11, // 11시(오전 11시) 이후 아침식사 제한
-        lunch: currentHour < 12, // 12시(오후 12시) 이전 점심식사 제한
-        dinner: isDinnerRestricted, // 7시(오전 7시)부터 19시(오후 7시) 사이 저녁식사 제한
+        breakfast: currentHour < 9 || currentHour > 11, // 9시부터 11시까지만 아침식사 가능
+        lunch: currentHour < 12 || currentHour > 17, // 12시부터 17시까지만 점심식사 가능
+        dinner: currentHour < 18, // 18시부터 23시59분까지만 저녁식사 가능
         snack: false, // 간식은 제한 없음
       });
       console.log('시간 제한 상태:', {
-        breakfast: currentHour >= 11,
-        lunch: currentHour < 12,
-        dinner: isDinnerRestricted,
+        breakfast: currentHour < 9 || currentHour > 11,
+        lunch: currentHour < 12 || currentHour > 17,
+        dinner: currentHour < 18,
         snack: false
       });
     };
@@ -89,11 +88,11 @@ const Main = () => {
   const getTimeRestrictionMessage = (mealType) => {
     switch (mealType) {
       case 'breakfast':
-        return '11시(오전 11시) 이후에는 기록할 수 없습니다';
+        return '09시부터 11시까지만 기록 가능합니다';
       case 'lunch':
-        return '12시(오후 12시) 이전에는 기록할 수 없습니다';
+        return '12시부터 17시까지만 기록 가능합니다';
       case 'dinner':
-        return '7시(오전 7시)부터 19시(오후 7시) 사이에는 기록할 수 없습니다';
+        return '18시부터 23시59분까지만 기록 가능합니다';
       default:
         return '';
     }

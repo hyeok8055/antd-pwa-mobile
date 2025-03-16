@@ -57,9 +57,12 @@ const Meal = () => {
         threshold: 0.3,
       });
 
-      let result = searchTerm ? fuse.search(searchTerm).map(item => item.item) : Object.values(foods);
+      // 검색어가 있을 때만 결과 표시
+      let result = searchTerm 
+        ? fuse.search(searchTerm).map(item => item.item) 
+        : [];
 
-      if (selectedCountry !== 'default') {
+      if (selectedCountry !== 'default' && searchTerm) {
         result = result.filter(item => item.country === selectedCountry);
       }
 
@@ -241,7 +244,7 @@ const Meal = () => {
     const item2 = items[itemIndex2];
 
     return (
-      <Row gutter={[4, 4]} style={style}>
+      <Row gutter={[8, 8]} style={style}>
         <Col span={12}>
           {item1 && (
             <div
@@ -253,17 +256,31 @@ const Meal = () => {
                 border: '1px solid #d9d9d9',
                 display: 'flex',
                 alignItems: 'center',
-                backgroundColor: selectedItems.includes(item1) ? '#f0f0f0' : 'white',
+                backgroundColor: selectedItems.includes(item1) ? '#f0fff7' : 'white',
                 position: 'relative',
                 cursor: 'pointer',
                 overflow: 'hidden',
+                borderRadius: '10px',
+                boxShadow: selectedItems.includes(item1) ? '0 2px 6px rgba(95, 221, 157, 0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+                borderColor: selectedItems.includes(item1) ? '#5FDD9D' : '#d9d9d9',
+                transition: 'all 0.2s ease'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500', textAlign: 'center', width: '100%' }}>{item1.name}</Text>
+                <Text style={{ 
+                  fontSize: '16px', 
+                  fontWeight: selectedItems.includes(item1) ? '600' : '500', 
+                  color: selectedItems.includes(item1) ? '#5FDD9D' : '#333', 
+                  fontFamily: selectedItems.includes(item1) ? 'Pretendard-600' : 'Pretendard-500', 
+                  textAlign: 'center', 
+                  width: '100%'
+                }}>
+                  {item1.name}
+                </Text>
                 {selectedItems.includes(item1) && (
                   <CheckCircleTwoTone
-                    style={{ position: 'absolute', right: 60, pointerEvents: 'none', fontSize: 30 }}
+                    twoToneColor="#5FDD9D"
+                    style={{ position: 'absolute', right: 10, pointerEvents: 'none', fontSize: 20 }}
                   />
                 )}
               </div>
@@ -281,24 +298,31 @@ const Meal = () => {
                 border: '1px solid #d9d9d9',
                 display: 'flex',
                 alignItems: 'center',
-                backgroundColor: selectedItems.includes(item2) ? '#f0f0f0' : 'white',
+                backgroundColor: selectedItems.includes(item2) ? '#f0fff7' : 'white',
                 position: 'relative',
                 cursor: 'pointer',
                 overflow: 'hidden',
+                borderRadius: '10px',
+                boxShadow: selectedItems.includes(item2) ? '0 2px 6px rgba(95, 221, 157, 0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+                borderColor: selectedItems.includes(item2) ? '#5FDD9D' : '#d9d9d9',
+                transition: 'all 0.2s ease'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', width: '100%', position: 'relative' }}>
-                <Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500', textAlign: 'center', width: '100%' }}>{item2.name}</Text>
+                <Text style={{ 
+                  fontSize: '16px', 
+                  fontWeight: selectedItems.includes(item2) ? '600' : '500', 
+                  color: selectedItems.includes(item2) ? '#5FDD9D' : '#333', 
+                  fontFamily: selectedItems.includes(item2) ? 'Pretendard-600' : 'Pretendard-500', 
+                  textAlign: 'center', 
+                  width: '100%'
+                }}>
+                  {item2.name}
+                </Text>
                 {selectedItems.includes(item2) && (
                   <CheckCircleTwoTone
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      pointerEvents: 'none',
-                      fontSize: 30,
-                    }}
+                    twoToneColor="#5FDD9D"
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 20 }}
                   />
                 )}
               </div>
@@ -311,97 +335,348 @@ const Meal = () => {
 
   const handleResize = useCallback(() => {
     if (containerRef.current) {
-      setListHeight(containerRef.current.clientHeight);
+      // 부모 컨테이너 높이에서 다른 요소들의 높이를 뺀 값으로 설정
+      const parentHeight = document.documentElement.clientHeight;
+      // 헤더(60px), 검색바 영역(~120px), 하단 네비게이션(60px), 여백 등을 고려한 값
+      const nonListHeight = 250;
+      const calculatedHeight = parentHeight - nonListHeight;
+      
+      // 최소 높이 설정 (너무 작아지지 않도록)
+      const finalHeight = Math.max(calculatedHeight, 200);
+      setListHeight(finalHeight);
     }
   }, []);
 
   useEffect(() => {
     handleResize();
-    let resizeObserver = null;
-    if (containerRef.current) {
-      resizeObserver = new ResizeObserver(handleResize);
-      resizeObserver.observe(containerRef.current);
-    }
+    
+    // 리사이즈 이벤트에 핸들러 추가
+    window.addEventListener('resize', handleResize);
+    
     return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
+      window.removeEventListener('resize', handleResize);
     };
   }, [handleResize]);
 
   return (
-    <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Row justify="space-between" style={{ marginBottom: 15 }}>
+    <div style={{ padding: '20px', height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 15 }}>
         <Text style={{ fontSize: '24px', fontWeight: '800', color: '#5FDD9D', letterSpacing: '1px', fontFamily: 'Pretendard-800'}}>
           {getMealTitle()} 식사목록
         </Text>
         
-        <Button type="primary" onClick={handleNextClick} disabled={selectedItems.length === 0} style={{ fontFamily: 'Pretendard-700', marginTop: 5}}>
-          다음으로
+        <Button 
+          type="primary" 
+          onClick={handleNextClick} 
+          disabled={selectedItems.length === 0} 
+          style={{ 
+            fontFamily: 'Pretendard-700', 
+            height: '40px', 
+            borderRadius: '8px',
+            background: selectedItems.length > 0 ? '#5FDD9D' : undefined,
+            boxShadow: selectedItems.length > 0 ? '0 2px 6px rgba(95, 221, 157, 0.4)' : undefined
+          }}
+        >
+          {selectedItems.length > 0 ? `${selectedItems.length}개 선택 완료` : '음식을 선택해주세요'}
         </Button>
       </Row>
-      <Row gutter={[16, 24]} align="middle" style={{}}>
-        <Col flex="auto">
+      <Row gutter={[16, 24]} align="middle" style={{ marginBottom: 5 }}>
+        <Col span={24}>
           <Search
-            placeholder="음식 검색"
+            placeholder="먹은 음식을 검색해보세요"
             value={searchTerm}
             size="large"
             onChange={handleSearchChange}
-            style={{ width: '100%', height: '40px' }}
+            style={{ 
+              width: '100%', 
+              height: '46px',
+              borderRadius: '12px'
+            }}
+            prefix={<span style={{ marginRight: '8px', fontSize: '18px' }}>🔍</span>}
           />
-          <Row justify="end" style={{ marginTop: 10 }}>
-            <Button onClick={handleAddFoodClick} icon={<PlusOutlined />} style={{ fontFamily: 'Pretendard-700'}}>
-              음식추가하기
-            </Button>
-          </Row>
         </Col>
       </Row>
-      <div style={{ flex: 1, marginTop: 10, overflowY: 'auto', marginBottom: '5vh' }} ref={containerRef}>
-        <FixedSizeList
-          ref={listRef}
-          height={listHeight}
-          width="100%"
-          itemSize={60}
-          itemCount={Math.ceil([...selectedItems, ...filteredFood.filter(item => !selectedItems.includes(item))].length / 2)}
+      <Row justify="center">
+        <Button 
+          onClick={handleAddFoodClick} 
+          icon={<PlusOutlined />} 
+          style={{ 
+            fontFamily: 'Pretendard-700',
+            height: '35px',
+            background: '#f0f0f0',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
         >
-          {RowRenderer}
-        </FixedSizeList>
+          찾는 음식이 없다면 직접 추가하기
+        </Button>
+      </Row>
+      
+      {searchTerm && filteredFood.length === 0 && (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          padding: '30px',
+          marginTop: '10px',
+          backgroundColor: '#f9f9f9',
+          borderRadius: '12px',
+          marginBottom: '10px'
+        }}>
+          <Text style={{ fontSize: '16px', color: '#666', fontFamily: 'Pretendard-500' }}>
+            '{searchTerm}'에 대한 검색 결과가 없습니다
+          </Text>
+          <Button 
+            onClick={handleAddFoodClick} 
+            type="link" 
+            style={{ fontFamily: 'Pretendard-700', color: '#5FDD9D', marginTop: '10px' }}
+          >
+            직접 추가하기
+          </Button>
+        </div>
+      )}
+      
+      <div style={{ 
+        flex: 1, 
+        marginTop: 10, 
+        overflowY: 'auto', 
+        marginBottom: 10, 
+        display: 'flex', 
+        flexDirection: 'column',
+        maxHeight: `${listHeight}px`
+      }} ref={containerRef}>
+        {(searchTerm && filteredFood.length > 0) || (!searchTerm && selectedItems.length > 0) ? (
+          // 검색어가 있거나 선택된 항목이 있을 때 음식 목록 표시
+          <>
+            <Row style={{ marginBottom: '10px' }}>
+              <Col span={24}>
+                {searchTerm ? (
+                  <Text style={{ color: '#666', fontFamily: 'Pretendard-500' }}>
+                    검색 결과: {filteredFood.length}개
+                  </Text>
+                ) : (
+                  <Text style={{ color: '#666', fontFamily: 'Pretendard-500' }}>
+                    선택한 음식
+                  </Text>
+                )}
+                {selectedItems.length > 0 && (
+                  <Text style={{ marginLeft: '10px', color: '#5FDD9D', fontFamily: 'Pretendard-500' }}>
+                    {selectedItems.length}개 선택됨
+                  </Text>
+                )}
+              </Col>
+            </Row>
+            <FixedSizeList
+              ref={listRef}
+              height={listHeight}
+              width="100%"
+              itemSize={60}
+              itemCount={Math.ceil((!searchTerm ? selectedItems : [...selectedItems, ...filteredFood.filter(item => !selectedItems.includes(item))]).length / 2)}
+            >
+              {({ index, style }) => {
+                const items = !searchTerm 
+                  ? selectedItems // 검색어가 없으면 선택된 항목만 표시
+                  : [...selectedItems, ...filteredFood.filter(item => !selectedItems.includes(item))];
+                const itemIndex1 = index * 2;
+                const itemIndex2 = index * 2 + 1;
+                const item1 = items[itemIndex1];
+                const item2 = items[itemIndex2];
+
+                return (
+                  <Row gutter={[8, 8]} style={style}>
+                    <Col span={12}>
+                      {item1 && (
+                        <div
+                          onClick={() => handleItemSelect(item1)}
+                          className="bg-bg1 rounded-xl shadow-lg"
+                          style={{
+                            width: '100%',
+                            height: '48px',
+                            border: '1px solid #d9d9d9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            backgroundColor: selectedItems.includes(item1) ? '#f0fff7' : 'white',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            borderRadius: '10px',
+                            boxShadow: selectedItems.includes(item1) ? '0 2px 6px rgba(95, 221, 157, 0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+                            borderColor: selectedItems.includes(item1) ? '#5FDD9D' : '#d9d9d9',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: selectedItems.includes(item1) ? '600' : '500', 
+                              color: selectedItems.includes(item1) ? '#5FDD9D' : '#333', 
+                              fontFamily: selectedItems.includes(item1) ? 'Pretendard-600' : 'Pretendard-500', 
+                              textAlign: 'center', 
+                              width: '100%'
+                            }}>
+                              {item1.name}
+                            </Text>
+                            {selectedItems.includes(item1) && (
+                              <CheckCircleTwoTone
+                                twoToneColor="#5FDD9D"
+                                style={{ position: 'absolute', right: 10, pointerEvents: 'none', fontSize: 20 }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </Col>
+                    <Col span={12}>
+                      {item2 && (
+                        <div
+                          onClick={() => handleItemSelect(item2)}
+                          className="bg-bg1 rounded-xl shadow-lg"
+                          style={{
+                            width: '100%',
+                            height: '48px',
+                            border: '1px solid #d9d9d9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            backgroundColor: selectedItems.includes(item2) ? '#f0fff7' : 'white',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            borderRadius: '10px',
+                            boxShadow: selectedItems.includes(item2) ? '0 2px 6px rgba(95, 221, 157, 0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+                            borderColor: selectedItems.includes(item2) ? '#5FDD9D' : '#d9d9d9',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', width: '100%', position: 'relative' }}>
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: selectedItems.includes(item2) ? '600' : '500', 
+                              color: selectedItems.includes(item2) ? '#5FDD9D' : '#333', 
+                              fontFamily: selectedItems.includes(item2) ? 'Pretendard-600' : 'Pretendard-500', 
+                              textAlign: 'center', 
+                              width: '100%'
+                            }}>
+                              {item2.name}
+                            </Text>
+                            {selectedItems.includes(item2) && (
+                              <CheckCircleTwoTone
+                                twoToneColor="#5FDD9D"
+                                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 20 }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </Col>
+                  </Row>
+                );
+              }}
+            </FixedSizeList>
+          </>
+        ) : !searchTerm ? (
+          // 검색어가 없고 선택된 항목도 없을 때 안내 메시지 표시 (기존 UI 유지)
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center',
+            alignItems: 'center', 
+            flex: 1,
+            textAlign: 'center',
+            padding: '20px'
+          }}>
+            <div style={{ 
+              marginBottom: '20px', 
+              fontSize: '80px', 
+              color: '#ccc'
+            }}>
+              🍽️
+            </div>
+            <Text style={{ 
+              fontSize: '20px', 
+              fontWeight: '700', 
+              color: '#333', 
+              marginBottom: '15px', 
+              fontFamily: 'Pretendard-700'
+            }}>
+              오늘 어떤 음식을 드셨나요?
+            </Text>
+            <Text style={{ 
+              fontSize: '16px', 
+              color: '#666', 
+              marginBottom: '20px', 
+              fontFamily: 'Pretendard-500' 
+            }}>
+              위 검색창에 드신 음식을 검색해보세요
+            </Text>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              backgroundColor: '#f5f5f5',
+              padding: '15px',
+              borderRadius: '10px',
+              maxWidth: '300px'
+            }}>
+              <Text style={{ fontSize: '14px', color: '#888', fontFamily: 'Pretendard-500' }}>
+                예시: 김치찌개, 제육볶음, 샐러드...
+              </Text>
+              <Text style={{ fontSize: '14px', color: '#888', marginTop: '5px', fontFamily: 'Pretendard-500' }}>
+                원하는 음식이 없다면 '음식추가하기'를 눌러주세요
+              </Text>
+            </div>
+          </div>
+        ) : null}
       </div>
+      
       <Modal
-        title={<Text style={{ fontSize: '20px', fontWeight: '800', color: 'black', letterSpacing: '1px', fontFamily: 'Pretendard-900'}}>
+        title={<Text style={{ fontSize: '20px', fontWeight: '800', color: '#5FDD9D', letterSpacing: '1px', fontFamily: 'Pretendard-900'}}>
           음식 추가하기
         </Text>}
         visible={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
-        okText="추가"
+        okText="추가하기"
         cancelText="취소"
-        okButtonProps={{ disabled: !isFormValid() }}
+        okButtonProps={{ 
+          disabled: !isFormValid(),
+          style: isFormValid() ? { backgroundColor: '#5FDD9D', borderColor: '#5FDD9D' } : undefined
+        }}
+        style={{ borderRadius: '12px' }}
       >
         <Form layout="vertical">
           <Form.Item 
-            label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>음식 이름</Text>}
-            help="음식 이름을 상세하게 입력해주세요. (예: 돼지고기 김치찌개, 홍길동 부대찌개 라면 등)"
+            label={<Text style={{ fontSize: '16px', fontWeight: '600', color: '#333', fontFamily: 'Pretendard-600'}}>음식 이름</Text>}
+            help={<Text style={{ color: '#888' }}>음식 이름을 상세하게 입력해주세요 (예: 돼지고기 김치찌개, 홍길동 부대찌개 라면 등)</Text>}
           >
             <Input
               name="name"
               value={newFood.name}
               placeholder="예) 김치찌개, 돼지고기 김치찌개"
               onChange={(e) => handleInputChange(e, 'name')}
+              style={{ borderRadius: '8px', height: '40px' }}
             />
           </Form.Item>
           <Form.Item 
-            label={<Text style={{ fontSize: '16px', fontWeight: '500', color: '#333', fontFamily: 'Pretendard-500'}}>총 중량</Text>}
-            help="기본 단위는 '인분'입니다. 그램 단위로 입력하시려면 단위를 변경해주세요."
+            label={<Text style={{ fontSize: '16px', fontWeight: '600', color: '#333', fontFamily: 'Pretendard-600'}}>총 중량</Text>}
+            help={<Text style={{ color: '#888' }}>기본 단위는 '인분'입니다. 그램 단위로 입력하시려면 단위를 변경해주세요.</Text>}
           >
             <Input
               name="weight"
               value={newFood.weight}
               placeholder="예) 1, 2, 0.5"
               onChange={(e) => handleInputChange(e, 'weight')}
-              style={{ width: '100%' }}
+              style={{ width: '100%', borderRadius: '8px', height: '40px' }}
               addonAfter={
-                <Select defaultValue="인분" value={weightUnit} onChange={handleWeightUnitChange}>
+                <Select 
+                  defaultValue="인분" 
+                  value={weightUnit} 
+                  onChange={handleWeightUnitChange}
+                  style={{ borderTopRightRadius: '8px', borderBottomRightRadius: '8px' }}
+                >
                   <Select.Option value="인분">인분</Select.Option>
                   <Select.Option value="g">g</Select.Option>
                 </Select>
