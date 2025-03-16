@@ -4,7 +4,6 @@ import { Popup, Space, Button, Avatar, Form, Input, Radio, Toast } from 'antd-mo
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseconfig';
 import { useSelector } from 'react-redux';
-import { checkForUpdateManually } from '../UpdateNotification';
 
 const { Text } = Typography;
 
@@ -44,6 +43,18 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
     } catch (error) {
       console.error("정보 업데이트 실패:", error);
     }
+  };
+
+  const refreshApp = () => {
+    Toast.show({
+      content: '새로고침 중...',
+      duration: 1000,
+    });
+
+    // 캐시된 리소스를 제외하고 페이지 새로고침
+    setTimeout(() => {
+      window.location.reload(true);
+    }, 500);
   };
 
   return (
@@ -96,8 +107,8 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
             <Button color='primary' onClick={handleEdit} style={{ marginTop: '32px', width: '100%', height: '30px' }}>
               <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>정보 수정</div>
             </Button>
-            <Button color='default' onClick={checkForUpdateManually} style={{ marginTop: '8px', width: '100%', height: '30px' }}>
-              <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>업데이트 확인</div>
+            <Button color='default' onClick={refreshApp} style={{ marginTop: '8px', width: '100%', height: '30px' }}>
+              <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>새로고침</div>
             </Button>
           </div>
         ) : (

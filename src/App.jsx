@@ -8,7 +8,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import UpdateNotification from './components/UpdateNotification';
 
 
 const App = () => {
@@ -149,7 +148,6 @@ const ConditionalHeaderFooter = () => {
           <Footer />
         </div>
       )}
-      <UpdateNotification />
     </div>
   );
 };
