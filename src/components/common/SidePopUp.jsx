@@ -53,7 +53,7 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
 
     // 새로고침 후 /main으로 리다이렉트
     setTimeout(() => {
-      window.location.href = '/main';
+      window.location.href = 'https://calorie-sync.netlify.app';
     }, 500);
   };
 
