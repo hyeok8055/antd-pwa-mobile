@@ -51,9 +51,9 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
       duration: 1000,
     });
 
-    // 캐시된 리소스를 제외하고 페이지 새로고침
+    // 새로고침 후 /main으로 리다이렉트
     setTimeout(() => {
-      window.location.reload(true);
+      window.location.href = '/main';
     }, 500);
   };
 
