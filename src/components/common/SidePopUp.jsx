@@ -4,14 +4,23 @@ import { Popup, Space, Button, Avatar, Form, Input, Radio, Toast } from 'antd-mo
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseconfig';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const { Text } = Typography;
+
+// 관리자 접근 가능한 이메일 목록
+const ADMIN_EMAILS = [
+  'eodud653923@gmail.com',
+  'youngwonhahn00@gmail.com',
+  'juhyeok0123@gmail.com'
+];
 
 const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
   const [userInfo, setUserInfo] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const uid = useSelector((state) => state.auth.user?.uid);
   const [form] = Form.useForm();
+  const navigate = useNavigate();
 
   // 사용자 정보 불러오기
   useEffect(() => {
@@ -56,6 +65,14 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
       window.location.href = 'https://calorie-sync.netlify.app';
     }, 500);
   };
+
+  const handleAdminPageClick = () => {
+    navigate('/admin');
+    onClose();
+  };
+
+  // 관리자 이메일인지 확인
+  const isAdmin = ADMIN_EMAILS.includes(email);
 
   return (
     <Popup
@@ -110,6 +127,13 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
             <Button color='default' onClick={refreshApp} style={{ marginTop: '8px', width: '100%', height: '30px' }}>
               <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>새로고침</div>
             </Button>
+            
+            {/* 관리자 버튼은 특정 이메일을 가진 사용자에게만 표시 */}
+            {isAdmin && (
+              <Button color='success' onClick={handleAdminPageClick} style={{ marginTop: '8px', width: '100%', height: '30px' }}>
+                <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>음식 데이터 관리</div>
+              </Button>
+            )}
           </div>
         ) : (
           // 정보 수정 모드
