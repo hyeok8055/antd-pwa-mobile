@@ -10,16 +10,8 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './redux/store';
 import ko_KR from 'antd-mobile/es/locales/ko-KR'
 
-// FCM 푸시 알림 관련
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    .then(registration => {
-      console.log('서비스 워커 등록 성공:', registration.scope);
-    })
-    .catch(err => {
-      console.error('서비스 워커 등록 실패:', err);
-    });
-}
+// PWA 등록 - Vite PWA 플러그인이 자동으로 처리하므로 별도 등록 코드 제거
+// FCM 푸시 알림은 App.jsx에서 관리하므로 여기서 등록하지 않음
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

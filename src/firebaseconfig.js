@@ -33,17 +33,23 @@ const getFCMToken = async (vapidKey) => {
       return null;
     }
 
-    // 서비스 워커 등록
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/'
-    });
+    // 서비스 워커 등록 확인 - 이미 등록된 서비스 워커가 있는지 확인
+    let swRegistration;
+    try {
+      swRegistration = await navigator.serviceWorker.ready;
+      console.log('기존 서비스 워커 사용:', swRegistration);
+    } catch (e) {
+      // 등록된 서비스 워커가 없는 경우 새로 등록
+      swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/'
+      });
+      console.log('새로운 서비스 워커 등록:', swRegistration);
+    }
     
-    console.log('서비스 워커 등록 성공:', registration);
-
     // FCM 토큰 요청
     const currentToken = await getToken(messaging, {
       vapidKey: vapidKey,
-      serviceWorkerRegistration: registration
+      serviceWorkerRegistration: swRegistration
     });
 
     if (currentToken) {

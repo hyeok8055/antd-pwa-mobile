@@ -15,6 +15,56 @@ const App = () => {
   const [notification, setNotification] = useState({ title: '', body: '' });
   const [fcmToken, setFcmToken] = useState('');
   const [isTokenVisible, setIsTokenVisible] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  // PWA 설치 관련 이벤트 핸들러
+  useEffect(() => {
+    // beforeinstallprompt 이벤트 처리
+    const handleBeforeInstallPrompt = (event) => {
+      // 브라우저 기본 설치 배너 방지
+      event.preventDefault();
+      // 이벤트 저장
+      setDeferredPrompt(event);
+      // 설치 버튼 표시
+      setShowInstallPrompt(true);
+      console.log('PWA 설치 가능: beforeinstallprompt 이벤트 발생');
+    };
+
+    // 이벤트 리스너 등록
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // 이미 설치된 경우 이벤트 처리
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA가 성공적으로 설치되었습니다');
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', () => {});
+    };
+  }, []);
+
+  // PWA 설치 함수
+  const installPwa = async () => {
+    if (!deferredPrompt) {
+      console.log('설치 프롬프트가 없습니다');
+      return;
+    }
+
+    // 설치 프롬프트 표시
+    deferredPrompt.prompt();
+    // 사용자 선택 대기
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`사용자 선택: ${outcome}`);
+    
+    // deferredPrompt 초기화
+    setDeferredPrompt(null);
+    // 설치 버튼 숨기기
+    setShowInstallPrompt(false);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -60,14 +110,6 @@ const App = () => {
 
         if (permission === 'granted') {
           console.log('알림이 허용되었습니다');
-          
-          // iOS와 Safari 지원을 위한 추가 체크
-          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-          
-          if (isIOS) {
-            console.log('iOS 기기 감지됨, 웹 푸시 알림은 iOS 16.4+ 및 Safari에서만 지원됩니다');
-          }
           
           // VAPID 키로 토큰 가져오기
           const token = await getFCMToken('BBOl7JOGCasgyKCZv1Atq_5MdnvWAWk_iWleIggXfXN3aMGJeuKdEHSTp4OGUfmVPNHwnf5eCLQyY80ITKzz7qk');
@@ -125,6 +167,40 @@ const App = () => {
 
   return (
     <BrowserRouter>
+      {/* PWA 설치 버튼 */}
+      {showInstallPrompt && (
+        <div style={{ 
+          position: 'fixed', 
+          top: '10px', 
+          left: '50%', 
+          transform: 'translateX(-50%)', 
+          backgroundColor: '#4CAF50', 
+          color: 'white', 
+          padding: '10px 15px',
+          borderRadius: '5px',
+          zIndex: 10000,
+          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <span>앱으로 설치하여 더 나은 경험을 누려보세요!</span>
+          <button 
+            onClick={installPwa}
+            style={{
+              backgroundColor: 'white',
+              color: '#4CAF50',
+              border: 'none',
+              padding: '5px 10px',
+              borderRadius: '3px',
+              cursor: 'pointer'
+            }}
+          >
+            설치하기
+          </button>
+        </div>
+      )}
+      
       {/* FCM 토큰 표시 UI - 추후 주석 처리하기 쉽도록 별도 블록으로 분리 */}
       {/* ===== FCM 토큰 UI 시작 ===== */}
       <div style={{ position: 'fixed', bottom: '70px', right: '10px', zIndex: 9999 }}>

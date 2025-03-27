@@ -8,7 +8,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.png', 'icons/*.ico'],
       devOptions: {
         enabled: true
       },
@@ -28,9 +29,26 @@ export default defineConfig({
                 statuses: [0, 200]
               }
             }
+          },
+          {
+            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'firebase-storage-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 1주일
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
           }
         ],
-        maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정 (필요에 따라 조정)
+        skipWaiting: true,
+        clientsClaim: true,
+        inlineWorkboxRuntime: true,
+        maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정
       },
       manifest: {
         name: 'Calorie Sync',
@@ -39,6 +57,10 @@ export default defineConfig({
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
+        categories: ['health', 'fitness', 'lifestyle'],
         icons: [
             {
               src: "./icons/apple-touch-icon-57x57.png",
@@ -70,7 +92,6 @@ export default defineConfig({
               sizes: "120x120",
               type: "image/png"
             },
-
             {
               "src": "./icons/apple-touch-icon-144x144.png",
               sizes: "144x144",
@@ -84,37 +105,44 @@ export default defineConfig({
             {
               "src": "./icons/maskable_icon_x48.png",
               sizes: "48x48",
-              type: "image/png"
+              type: "image/png",
+              purpose: "maskable"
             },
             {
               "src": "./icons/maskable_icon_x72.png",
               sizes: "72x72",
-              type: "image/png"
+              type: "image/png",
+              purpose: "maskable"
             },
             {
               "src": "./icons/maskable_icon_x96.png",
               sizes: "96x96",
-              type: "image/png"
+              type: "image/png",
+              purpose: "maskable"
             },
             {
               "src": "./icons/maskable_icon_x128.png",
               sizes: "128x128",
-              type: "image/png"
+              type: "image/png",
+              purpose: "maskable"
             },
             {
               "src": "./icons/maskable_icon_x192.png",
               sizes: "192x192",
-              type: "image/png"
+              type: "image/png",
+              purpose: "maskable"
             },
             {
               "src": "./icons/maskable_icon_x384.png",
               sizes: "384x384",
-              type: "image/png"
+              type: "image/png",
+              purpose: "maskable"
             },
             {
               "src": "./icons/maskable_icon_x512.png",
               sizes: "512x512",
-              type: "image/png"
+              type: "image/png",
+              purpose: "maskable any"
             }
           ]
       },

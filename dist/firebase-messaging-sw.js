@@ -14,33 +14,33 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 self.addEventListener('install', (event) => {
-  console.log('서비스 워커가 설치됨');
-  self.skipWaiting();
+  console.log('Firebase 메시징 서비스 워커 설치됨');
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('서비스 워커가 활성화됨');
-  event.waitUntil(clients.claim());
+  console.log('Firebase 메시징 서비스 워커 활성화됨');
 });
 
-// 백그라운드 메시지 처리 개선
+// 백그라운드 메시지 처리
 messaging.onBackgroundMessage((payload) => {
   console.log('백그라운드 메시지 수신:', payload);
   
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/icons/favicon.ico', // 실제 존재하는 아이콘 경로로 수정
-    badge: '/icons/favicon.ico', // 실제 존재하는 뱃지 아이콘 경로로 수정
-    data: payload.data,
-    tag: 'notification-tag',
-    vibrate: [200, 100, 200]
-  };
+  if (payload.notification) {
+    const notificationTitle = payload.notification.title || '알림';
+    const notificationOptions = {
+      body: payload.notification.body || '',
+      icon: payload.notification.icon || '/icons/favicon.ico',
+      badge: payload.notification.badge || '/icons/favicon.ico',
+      data: payload.data || {},
+      tag: 'notification-tag',
+      vibrate: [200, 100, 200]
+    };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  }
 });
 
-// 알림 클릭 이벤트 처리 개선
+// 알림 클릭 이벤트 처리
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
