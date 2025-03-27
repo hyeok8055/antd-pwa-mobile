@@ -20,59 +20,53 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-console.log('firebase app initialized:',app);
-
-// 푸시 알림을 위한 messaging 초기화
-let messaging = null;
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  // 서비스 워커 등록 - 여기서는 한 번만 등록되도록 수정
-  navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    .then((registration) => {
-      // console.log로 꼭 한 번만 실행되는지 확인
-      console.log('Service Worker registered with scope:', registration.scope);
-      messaging = getMessaging(app);
-    })
-    .catch((err) => {
-      console.error('Service Worker registration failed:', err);
-    });
-} else {
-  console.log('이 브라우저는 서비스 워커를 지원하지 않거나 브라우저 환경이 아닙니다.');
-}
-
-console.log('firebase messaging initialized:',messaging);
-
 const auth = getAuth(app);
 const db = getFirestore(app);
 const realtimeDb = getDatabase(app);
+const messaging = getMessaging(app);
 
-// 토큰 가져오기 함수
-export const getFCMToken = async (vapidKey) => {
-  if (!messaging) return null;
+// FCM 토큰 가져오기 함수
+const getFCMToken = async (vapidKey) => {
   try {
-    const token = await getToken(messaging, { vapidKey });
-    return token;
+    if (!('serviceWorker' in navigator)) {
+      console.log('서비스 워커를 지원하지 않는 브라우저입니다.');
+      return null;
+    }
+
+    // 서비스 워커 등록
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/'
+    });
+    
+    console.log('서비스 워커 등록 성공:', registration);
+
+    // FCM 토큰 요청
+    const currentToken = await getToken(messaging, {
+      vapidKey: vapidKey,
+      serviceWorkerRegistration: registration
+    });
+
+    if (currentToken) {
+      console.log('FCM 토큰:', currentToken);
+      return currentToken;
+    } else {
+      console.log('FCM 토큰을 가져올 수 없습니다. 권한을 확인하세요.');
+      return null;
+    }
   } catch (error) {
-    console.error('FCM 토큰 가져오기 실패:', error);
+    console.error('FCM 토큰 가져오기 오류:', error);
     return null;
   }
 };
 
-// 포어그라운드 메시지 수신 리스너 - 호출 시 한 번만 리스너 등록되도록 수정
-let messageListener = null;
-export const onMessageListener = () => {
-  if (messageListener) return messageListener; // 이미 리스너가 있으면 기존 것 반환
-  
-  messageListener = new Promise((resolve) => {
-    if (!messaging) return;
+// 포그라운드 메시지 리스너
+const onMessageListener = () => {
+  return new Promise((resolve) => {
     onMessage(messaging, (payload) => {
-      console.log('새 메시지 수신:', payload);
+      console.log('포그라운드 메시지 수신:', payload);
       resolve(payload);
     });
   });
-  
-  return messageListener;
 };
 
-// const analytics = getAnalytics(app);
-
-export { app, auth, db, realtimeDb, messaging };
+export { app, auth, db, realtimeDb, messaging, getFCMToken, onMessageListener };

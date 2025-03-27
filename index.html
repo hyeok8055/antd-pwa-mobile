@@ -4,8 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="icons/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <!--아이콘-->
-    <title>Calorie Sync</title>
+    <meta name="theme-color" content="#4CAF50" />
+    <meta name="description" content="영양 및 건강 관리 애플리케이션" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon-152x152.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>CalorieSync</title>
     <style>
       html, body {
         overscroll-behavior-x: none;
@@ -16,6 +21,5 @@
   <body class="h-full">
     <div id="root" class="h-full"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script src="/public/firebase-messaging-sw.js"></script>
   </body>
 </html>
