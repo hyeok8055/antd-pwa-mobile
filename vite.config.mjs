@@ -29,7 +29,8 @@ export default defineConfig({
               }
             }
           }
-        ]
+        ],
+        maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정 (필요에 따라 조정)
       },
       manifest: {
         name: 'Calorie Sync',
@@ -116,9 +117,6 @@ export default defineConfig({
               type: "image/png"
             }
           ]
-      },
-      workbox: {
-        maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정 (필요에 따라 조정)
       },
       gcm_sender_id: '830533101887' // Firebase Cloud Messaging sender ID
     })

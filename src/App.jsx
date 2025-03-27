@@ -118,29 +118,30 @@ const App = () => {
     };
   }, []);
 
-  // 개발 중에만 사용할 토큰 표시 토글 함수
+  // 토큰 표시 토글 함수
   const toggleTokenVisibility = () => {
     setIsTokenVisible(!isTokenVisible);
   };
 
   return (
     <BrowserRouter>
-      {/* 개발 중에만 사용할 FCM 토큰 표시 UI */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{ position: 'fixed', bottom: '70px', right: '10px', zIndex: 9999 }}>
-          <button onClick={toggleTokenVisibility} 
-            style={{ padding: '5px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>
-            {isTokenVisible ? '토큰 숨기기' : '토큰 보기'}
-          </button>
-          {isTokenVisible && fcmToken && (
-            <div style={{ marginTop: '5px', padding: '5px', backgroundColor: '#f0f0f0', borderRadius: '5px', maxWidth: '300px', wordBreak: 'break-all' }}>
-              {fcmToken}
-            </div>
-          )}
-        </div>
-      )}
+      {/* FCM 토큰 표시 UI - 추후 주석 처리하기 쉽도록 별도 블록으로 분리 */}
+      {/* ===== FCM 토큰 UI 시작 ===== */}
+      <div style={{ position: 'fixed', bottom: '70px', right: '10px', zIndex: 9999 }}>
+        <button onClick={toggleTokenVisibility} 
+          style={{ padding: '5px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>
+          {isTokenVisible ? '토큰 숨기기' : '토큰 보기'}
+        </button>
+        {isTokenVisible && fcmToken && (
+          <div style={{ marginTop: '5px', padding: '5px', backgroundColor: '#f0f0f0', borderRadius: '5px', maxWidth: '300px', wordBreak: 'break-all' }}>
+            {fcmToken}
+          </div>
+        )}
+      </div>
+      {/* ===== FCM 토큰 UI 끝 ===== */}
       
       {/* 알림이 있을 때 표시 (테스트용) */}
+      {/* ===== 알림 표시 UI 시작 ===== */}
       {notification.title && (
         <div 
           style={{ 
@@ -159,6 +160,7 @@ const App = () => {
           <p>{notification.body}</p>
         </div>
       )}
+      {/* ===== 알림 표시 UI 끝 ===== */}
       
       <ConditionalHeaderFooter />
     </BrowserRouter>
