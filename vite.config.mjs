@@ -8,11 +8,14 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.png', 'icons/*.ico'],
       devOptions: {
         enabled: true
       },
+      strategies: 'generateSW',
+      filename: 'sw.js',
+      manifestFilename: 'manifest.webmanifest',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
@@ -47,6 +50,7 @@ export default defineConfig({
         ],
         skipWaiting: true,
         clientsClaim: true,
+        cleanupOutdatedCaches: true,
         inlineWorkboxRuntime: true,
         maximumFileSizeToCacheInBytes: 5000000, // 5MB로 설정
       },
@@ -54,99 +58,108 @@ export default defineConfig({
         name: 'Calorie Sync',
         short_name: 'Calorie Sync',
         description: 'Calorie Sync는 섭취한 칼로리와 나의 예측치를 비교하여 칼로리 관리를 도와줍니다.',
-        theme_color: '#ffffff',
+        theme_color: '#4CAF50',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
         categories: ['health', 'fitness', 'lifestyle'],
+        lang: 'ko',
         icons: [
             {
-              src: "./icons/apple-touch-icon-57x57.png",
+              src: "/icons/apple-touch-icon-57x57.png",
               sizes: "57x57",
               type: "image/png"
             },
             {
-              src: "./icons/apple-touch-icon-60x60.png",
+              src: "/icons/apple-touch-icon-60x60.png",
               sizes: "60x60",
               type: "image/png"
             },
             {
-              src: "./icons/apple-touch-icon-72x72.png",
+              src: "/icons/apple-touch-icon-72x72.png",
               sizes: "72x72",
               type: "image/png"
             },
             {
-              src: "./icons/apple-touch-icon-76x76.png",
+              src: "/icons/apple-touch-icon-76x76.png",
               sizes: "76x76",
               type: "image/png"
             },
             {
-              src: "./icons/apple-touch-icon-114x114.png",
+              src: "/icons/apple-touch-icon-114x114.png",
               sizes: "114x114",
               type: "image/png"
             },
             {
-              src: "./icons/apple-touch-icon-120x120.png",
+              src: "/icons/apple-touch-icon-120x120.png",
               sizes: "120x120",
               type: "image/png"
             },
             {
-              "src": "./icons/apple-touch-icon-144x144.png",
+              "src": "/icons/apple-touch-icon-144x144.png",
               sizes: "144x144",
               type: "image/png"
             },
             {
-              "src": "./icons/apple-touch-icon-152x152.png",
+              "src": "/icons/apple-touch-icon-152x152.png",
               sizes: "152x152",
               type: "image/png"
             },
             {
-              "src": "./icons/maskable_icon_x48.png",
+              "src": "/icons/maskable_icon_x48.png",
               sizes: "48x48",
               type: "image/png",
               purpose: "maskable"
             },
             {
-              "src": "./icons/maskable_icon_x72.png",
+              "src": "/icons/maskable_icon_x72.png",
               sizes: "72x72",
               type: "image/png",
               purpose: "maskable"
             },
             {
-              "src": "./icons/maskable_icon_x96.png",
+              "src": "/icons/maskable_icon_x96.png",
               sizes: "96x96",
               type: "image/png",
               purpose: "maskable"
             },
             {
-              "src": "./icons/maskable_icon_x128.png",
+              "src": "/icons/maskable_icon_x128.png",
               sizes: "128x128",
               type: "image/png",
               purpose: "maskable"
             },
             {
-              "src": "./icons/maskable_icon_x192.png",
+              "src": "/icons/maskable_icon_x192.png",
               sizes: "192x192",
               type: "image/png",
               purpose: "maskable"
             },
             {
-              "src": "./icons/maskable_icon_x384.png",
+              "src": "/icons/maskable_icon_x384.png",
               sizes: "384x384",
               type: "image/png",
               purpose: "maskable"
             },
             {
-              "src": "./icons/maskable_icon_x512.png",
+              "src": "/icons/maskable_icon_x512.png",
               sizes: "512x512",
               type: "image/png",
-              purpose: "maskable any"
+              purpose: "any maskable"
+            },
+            {
+              "src": "/icons/favicon-196x196.png",
+              sizes: "196x196",
+              type: "image/png",
+              purpose: "any"
             }
           ]
       },
-      gcm_sender_id: '830533101887' // Firebase Cloud Messaging sender ID
+      experimental: {
+        directoryAndTrailingSlashHandler: true
+      }
     })
   ],
   resolve: {
@@ -161,6 +174,8 @@ export default defineConfig({
         main: './index.html',
       },
     },
+    outDir: 'dist',
+    emptyOutDir: true,
   },
   server: {
     headers: {

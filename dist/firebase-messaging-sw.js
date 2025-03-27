@@ -13,14 +13,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-self.addEventListener('install', (event) => {
-  console.log('Firebase 메시징 서비스 워커 설치됨');
-});
-
-self.addEventListener('activate', (event) => {
-  console.log('Firebase 메시징 서비스 워커 활성화됨');
-});
-
 // 백그라운드 메시지 처리
 messaging.onBackgroundMessage((payload) => {
   console.log('백그라운드 메시지 수신:', payload);
