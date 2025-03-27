@@ -257,19 +257,17 @@ const App = () => {
       )}
       
       {/* FCM 토큰 표시 UI - 개발용 */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{ position: 'fixed', bottom: '70px', right: '10px', zIndex: 9999 }}>
-          <button onClick={toggleTokenVisibility} 
-            style={{ padding: '5px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>
-            {isTokenVisible ? '토큰 숨기기' : '토큰 보기'}
-          </button>
-          {isTokenVisible && fcmToken && (
-            <div style={{ marginTop: '5px', padding: '5px', backgroundColor: '#f0f0f0', borderRadius: '5px', maxWidth: '300px', wordBreak: 'break-all' }}>
-              {fcmToken}
-            </div>
-          )}
-        </div>
-      )}
+      <div style={{ position: 'fixed', bottom: '70px', right: '10px', zIndex: 9999 }}>
+        <button onClick={toggleTokenVisibility} 
+          style={{ padding: '5px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>
+          {isTokenVisible ? '토큰 숨기기' : '토큰 보기'}
+        </button>
+        {isTokenVisible && fcmToken && (
+          <div style={{ marginTop: '5px', padding: '5px', backgroundColor: '#f0f0f0', borderRadius: '5px', maxWidth: '300px', wordBreak: 'break-all' }}>
+            {fcmToken}
+          </div>
+        )}
+      </div>
       
       {/* 알림 표시 UI */}
       {notification.title && (
