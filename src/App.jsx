@@ -3,11 +3,11 @@ import { useLocation, useNavigate, BrowserRouter, Routes, Route, Navigate } from
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
-import { auth, db, messaging, getFCMToken, onMessageListener } from './firebaseconfig';
+import { auth, db, messaging, getFCMToken, onMessageListener, checkDeviceCompatibility, VAPID_KEY } from './firebaseconfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
 
 
 const App = () => {
@@ -17,6 +17,7 @@ const App = () => {
   const [isTokenVisible, setIsTokenVisible] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [deviceInfo, setDeviceInfo] = useState(null);
 
   // PWA 설치 관련 이벤트 핸들러
   useEffect(() => {
@@ -66,21 +67,25 @@ const App = () => {
     setShowInstallPrompt(false);
   };
 
+  // 사용자 인증 상태 감시
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Firestore에서 사용자 정보 확인
         const userDoc = await getDoc(doc(db, "users", user.uid));
-        const userData = userDoc.data();
+        const userData = userDoc.data() || {};
 
         const serializedUser = {
           uid: user.uid,
           displayName: user.displayName,
           email: user.email,
-          setupCompleted: userData?.setupCompleted || false, // setupCompleted 상태 추가
+          setupCompleted: userData?.setupCompleted || false,
         };
         
         dispatch(setAuthStatus(serializedUser));
+        
+        // 로그인 성공 시 FCM 토큰 설정
+        setupNotifications(user.uid);
       } else {
         dispatch(clearAuthStatus());
       }
@@ -89,76 +94,126 @@ const App = () => {
     return () => unsubscribe();
   }, [dispatch]);
 
+  // 디바이스 정보 초기화
   useEffect(() => {
-    let messageUnsubscribe = null;
+    if (typeof window !== 'undefined') {
+      const info = checkDeviceCompatibility();
+      setDeviceInfo(info);
+      console.log('디바이스 호환성 정보:', info);
+    }
+  }, []);
 
-    const setupNotifications = async () => {
-      try {
-        if (!('Notification' in window)) {
-          console.log('이 브라우저는 알림을 지원하지 않습니다');
+  // 알림 설정 함수
+  const setupNotifications = async (userId) => {
+    try {
+      // 브라우저가 알림을 지원하는지 확인
+      if (!('Notification' in window)) {
+        console.log('이 브라우저는 알림을 지원하지 않습니다.');
+        return;
+      }
+
+      // 디바이스 호환성 검사
+      if (deviceInfo?.isIOS && !deviceInfo?.isCompatibleIOS) {
+        console.log('iOS 16.4 미만에서는 웹 푸시 알림이 지원되지 않습니다.');
+        // 사용자에게 알림 지원 불가 메시지를 표시할 수 있음
+        return;
+      }
+
+      // 알림 권한 요청
+      let permission = Notification.permission;
+      if (permission === 'default') {
+        console.log('알림 권한 요청 중...');
+        permission = await Notification.requestPermission();
+      }
+
+      if (permission === 'granted') {
+        console.log('알림 권한이 허용되었습니다.');
+
+        // FCM 토큰 요청
+        const token = await getFCMToken(VAPID_KEY);
+        if (!token) {
+          console.log('FCM 토큰을 가져올 수 없습니다.');
           return;
         }
 
-        // 현재 알림 권한 상태 확인
-        let permission = Notification.permission;
-        
-        // 권한이 'default' 상태일 때만 권한 요청
-        if (permission === 'default') {
-          permission = await Notification.requestPermission();
-          console.log('알림 권한 요청 결과:', permission);
-        }
+        console.log('FCM 토큰 획득 성공');
+        setFcmToken(token);
 
-        if (permission === 'granted') {
-          console.log('알림이 허용되었습니다');
+        // 사용자 문서에 토큰 저장
+        try {
+          // 디바이스 정보
+          const deviceData = {
+            fcmToken: token,
+            lastUpdated: new Date(),
+            platform: deviceInfo?.isIOS ? 'iOS' : 
+                      /android/i.test(navigator.userAgent) ? 'Android' : 'Web',
+            userAgent: navigator.userAgent,
+            // 기기 고유 식별자 대신 브라우저 세션마다 다른 임의의 ID 생성
+            deviceId: `${Math.random().toString(36).substring(2, 15)}_${Date.now().toString(36)}`,
+          };
+
+          // 토큰 컬렉션 구조로 변경 (여러 기기 지원)
+          const tokensRef = collection(doc(db, 'users', userId), 'fcmTokens');
           
-          // VAPID 키로 토큰 가져오기
-          const token = await getFCMToken('BBOl7JOGCasgyKCZv1Atq_5MdnvWAWk_iWleIggXfXN3aMGJeuKdEHSTp4OGUfmVPNHwnf5eCLQyY80ITKzz7qk');
-          
-          if (token) {
-            console.log('FCM 토큰:', token);
-            setFcmToken(token);
-            
-            // 로그인된 사용자의 경우 토큰을 Firestore에 저장
-            if (auth.currentUser) {
-              await setDoc(doc(db, 'users', auth.currentUser.uid), {
-                fcmToken: token
-              }, { merge: true });
-            }
+          // 기존 토큰 찾기 (이 기기의 이전 토큰)
+          const existingToken = deviceData.deviceId ? 
+            await getDoc(doc(tokensRef, deviceData.deviceId)) : null;
+
+          if (existingToken?.exists()) {
+            // 기존 토큰 업데이트
+            await updateDoc(doc(tokensRef, deviceData.deviceId), deviceData);
+          } else {
+            // 새 토큰 추가
+            await addDoc(tokensRef, deviceData);
           }
 
-          // 포어그라운드 메시지 수신 처리
-          messageUnsubscribe = onMessageListener()
-            .then((payload) => {
-              console.log('포어그라운드 메시지:', payload);
+          // 호환성을 위해 기존 필드도 유지
+          await updateDoc(doc(db, 'users', userId), {
+            fcmToken: token,
+            lastTokenUpdate: new Date()
+          });
+          
+          console.log('FCM 토큰이 Firestore에 저장되었습니다.');
+        } catch (error) {
+          console.error('FCM 토큰 저장 중 오류:', error);
+        }
+
+        // 포그라운드 메시지 수신 처리
+        const unsubscribe = onMessageListener()
+          .then((payload) => {
+            console.log('포그라운드 메시지 수신:', payload);
+            
+            if (payload) {
               setNotification({
-                title: payload.notification.title,
-                body: payload.notification.body
+                title: payload.notification?.title || '알림',
+                body: payload.notification?.body || '새로운 메시지가 있습니다'
               });
               
-              // 알림 표시
-              new Notification(payload.notification.title, {
-                body: payload.notification.body,
-                icon: '/icons/favicon.ico',
-                badge: '/icons/favicon.ico'
-              });
-            })
-            .catch((err) => console.error('메시지 수신 에러:', err));
-        } else if (permission === 'denied') {
-          console.log('알림이 차단되었습니다. 브라우저 설정에서 허용해주세요.');
-        }
-      } catch (error) {
-        console.error('알림 설정 중 에러 발생:', error);
+              // iOS Safari에서는 서비스 워커가 제한적이므로 직접 알림 표시
+              if (deviceInfo?.isIOS && deviceInfo?.isSafari) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  try {
+                    new Notification(payload.notification?.title || '알림', {
+                      body: payload.notification?.body || '새로운 메시지가 있습니다',
+                      icon: '/icons/maskable_icon_x192.png'
+                    });
+                  } catch (error) {
+                    console.error('알림 표시 중 오류:', error);
+                  }
+                }
+              }
+            }
+          })
+          .catch((err) => console.error('메시지 수신 오류:', err));
+          
+        return unsubscribe;
+      } else if (permission === 'denied') {
+        console.log('알림이 차단되었습니다. 브라우저 설정에서 허용해주세요.');
       }
-    };
-
-    setupNotifications();
-
-    return () => {
-      if (messageUnsubscribe) {
-        messageUnsubscribe();
-      }
-    };
-  }, []);
+    } catch (error) {
+      console.error('알림 설정 중 오류:', error);
+    }
+  };
 
   // 토큰 표시 토글 함수
   const toggleTokenVisibility = () => {
@@ -201,23 +256,22 @@ const App = () => {
         </div>
       )}
       
-      {/* FCM 토큰 표시 UI - 추후 주석 처리하기 쉽도록 별도 블록으로 분리 */}
-      {/* ===== FCM 토큰 UI 시작 ===== */}
-      <div style={{ position: 'fixed', bottom: '70px', right: '10px', zIndex: 9999 }}>
-        <button onClick={toggleTokenVisibility} 
-          style={{ padding: '5px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>
-          {isTokenVisible ? '토큰 숨기기' : '토큰 보기'}
-        </button>
-        {isTokenVisible && fcmToken && (
-          <div style={{ marginTop: '5px', padding: '5px', backgroundColor: '#f0f0f0', borderRadius: '5px', maxWidth: '300px', wordBreak: 'break-all' }}>
-            {fcmToken}
-          </div>
-        )}
-      </div>
-      {/* ===== FCM 토큰 UI 끝 ===== */}
+      {/* FCM 토큰 표시 UI - 개발용 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ position: 'fixed', bottom: '70px', right: '10px', zIndex: 9999 }}>
+          <button onClick={toggleTokenVisibility} 
+            style={{ padding: '5px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>
+            {isTokenVisible ? '토큰 숨기기' : '토큰 보기'}
+          </button>
+          {isTokenVisible && fcmToken && (
+            <div style={{ marginTop: '5px', padding: '5px', backgroundColor: '#f0f0f0', borderRadius: '5px', maxWidth: '300px', wordBreak: 'break-all' }}>
+              {fcmToken}
+            </div>
+          )}
+        </div>
+      )}
       
-      {/* 알림이 있을 때 표시 (테스트용) */}
-      {/* ===== 알림 표시 UI 시작 ===== */}
+      {/* 알림 표시 UI */}
       {notification.title && (
         <div 
           style={{ 
@@ -234,9 +288,23 @@ const App = () => {
         >
           <h3>{notification.title}</h3>
           <p>{notification.body}</p>
+          <button 
+            onClick={() => setNotification({ title: '', body: '' })}
+            style={{ 
+              background: 'transparent',
+              border: '1px solid white',
+              color: 'white',
+              borderRadius: '3px',
+              padding: '3px 8px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              marginTop: '5px'
+            }}
+          >
+            닫기
+          </button>
         </div>
       )}
-      {/* ===== 알림 표시 UI 끝 ===== */}
       
       <ConditionalHeaderFooter />
     </BrowserRouter>
