@@ -124,89 +124,12 @@ const getFCMToken = async (vapidKey = VAPID_KEY) => {
       return null;
     }
 
-    // 서비스 워커 등록 확인
-    let swRegistration = null;
-    
-    try {
-      // 이미 활성화된 서비스 워커 확인
-      swRegistration = await navigator.serviceWorker.ready;
-      console.log('활성화된 서비스 워커 발견:', swRegistration.scope);
-    } catch (e) {
-      console.log('활성화된 서비스 워커가 없습니다. 서비스 워커 등록을 확인합니다.');
-      
-      // 등록된 서비스 워커 확인
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      
-      if (registrations.length === 0) {
-        console.log('등록된 서비스 워커가 없어 새로 등록합니다.');
-        try {
-          // Firebase 메시징 서비스 워커 등록
-          swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-            scope: '/'
-          });
-          console.log('Firebase 메시징 서비스 워커 등록 성공:', swRegistration.scope);
-          
-          // 서비스 워커가 활성화될 때까지 기다림
-          if (swRegistration.installing || swRegistration.waiting) {
-            console.log('서비스 워커 활성화 대기 중...');
-            await new Promise((resolve) => {
-              const worker = swRegistration.installing || swRegistration.waiting;
-              worker.addEventListener('statechange', (e) => {
-                if (e.target.state === 'activated') {
-                  console.log('서비스 워커가 활성화되었습니다.');
-                  resolve();
-                }
-              });
-            });
-          }
-        } catch (err) {
-          console.error('서비스 워커 등록 실패:', err);
-          return null;
-        }
-      } else {
-        // 이미 등록된 서비스 워커 중 활성화된 것 찾기
-        for (const reg of registrations) {
-          console.log('등록된 서비스 워커:', reg.scope, 'state:', reg.active ? 'active' : (reg.installing ? 'installing' : 'waiting'));
-          if (reg.active) {
-            swRegistration = reg;
-            console.log('활성화된 서비스 워커를 사용합니다:', reg.scope);
-            break;
-          }
-        }
-        
-        // 활성화된 서비스 워커가 없으면 첫 번째 등록된 서비스 워커 사용
-        if (!swRegistration && registrations.length > 0) {
-          swRegistration = registrations[0];
-          console.log('활성화 중인 서비스 워커를 사용합니다:', swRegistration.scope);
-          
-          // 서비스 워커가 활성화될 때까지 기다림
-          if (swRegistration.installing || swRegistration.waiting) {
-            console.log('서비스 워커 활성화 대기 중...');
-            await new Promise((resolve) => {
-              const worker = swRegistration.installing || swRegistration.waiting;
-              worker.addEventListener('statechange', (e) => {
-                if (e.target.state === 'activated') {
-                  console.log('서비스 워커가 활성화되었습니다.');
-                  resolve();
-                }
-              });
-            });
-          }
-        }
-      }
-    }
-    
-    if (!swRegistration) {
-      console.error('유효한 서비스 워커를 찾을 수 없습니다.');
-      return null;
-    }
-    
     console.log('FCM 토큰 요청 중...');
     
-    // FCM 토큰 요청
+    // FCM 토큰 요청 (serviceWorkerRegistration 옵션 제거)
     const currentToken = await getToken(messaging, {
       vapidKey: vapidKey,
-      serviceWorkerRegistration: swRegistration
+      // serviceWorkerRegistration: swRegistration // SDK가 자동으로 처리하도록 제거
     });
 
     if (currentToken) {
@@ -224,12 +147,21 @@ const getFCMToken = async (vapidKey = VAPID_KEY) => {
 
 // 포그라운드 메시지 리스너 (개선)
 const onMessageListener = () => {
-  if (!messaging) return Promise.resolve(null);
+  // 메시징 인스턴스가 없으면 즉시 null 반환
+  if (!messaging) {
+    console.warn('[firebaseconfig.js] 메시징 인스턴스가 초기화되지 않았습니다.');
+    return Promise.resolve(null); 
+  }
   
   return new Promise((resolve) => {
     onMessage(messaging, (payload) => {
-      console.log('포그라운드 메시지 수신:', payload);
+      console.log('[firebaseconfig.js] 포그라운드 메시지 수신:', payload);
       
+      // 포그라운드에서는 앱 UI로 알림을 처리하므로, 여기서 브라우저 알림을 직접 표시하지 않음.
+      // 페이로드만 resolve하여 App.jsx에서 처리하도록 함.
+      resolve(payload); 
+      
+      /* 삭제: 포그라운드에서 서비스 워커 통한 알림 표시 로직
       // 브라우저 알림 직접 표시 (iOS Safari와의 호환성을 위해)
       if (Notification.permission === 'granted') {
         let title = payload.notification?.title || '알림';
@@ -248,14 +180,18 @@ const onMessageListener = () => {
             registration.showNotification(title, options);
           }).catch(err => {
             // 서비스 워커를 통한 알림 실패 시 브라우저 API 직접 사용
-            new Notification(title, options);
+            console.error('[firebaseconfig.js] 서비스 워커 통한 알림 표시 실패, 직접 표시 시도:', err);
+            try {
+              new Notification(title, options);
+            } catch (e) {
+              console.error('[firebaseconfig.js] 직접 알림 표시 실패:', e);
+            }
           });
         } catch (error) {
-          console.error('알림 표시 중 오류:', error);
+          console.error('[firebaseconfig.js] 포그라운드 알림 표시 중 오류:', error);
         }
       }
-      
-      resolve(payload);
+      */
     });
   });
 };

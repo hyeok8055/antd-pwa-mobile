@@ -65,6 +65,15 @@ messaging.onBackgroundMessage((payload) => {
   }
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+
+  // 앱 아이콘 배지 업데이트 (카운트는 예시로 1로 설정, 실제로는 관리 필요)
+  if ('setAppBadge' in navigator) {
+    navigator.setAppBadge(1).catch((error) => {
+      console.error('[firebase-messaging-sw.js] 앱 배지 설정 실패:', error);
+    });
+  } else {
+    console.log('[firebase-messaging-sw.js] 앱 배지 API가 지원되지 않습니다.');
+  }
 });
 
 // 알림 클릭 이벤트 개선
@@ -72,6 +81,13 @@ self.addEventListener('notificationclick', (event) => {
   console.log('[firebase-messaging-sw.js] 알림 클릭됨:', event);
   
   event.notification.close();
+  
+  // 앱 아이콘 배지 클리어
+  if ('clearAppBadge' in navigator) {
+    navigator.clearAppBadge().catch((error) => {
+      console.error('[firebase-messaging-sw.js] 앱 배지 제거 실패:', error);
+    });
+  }
   
   // 이동할 URL 결정
   const urlToOpen = event.notification.data?.url || 
@@ -101,7 +117,8 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// 푸시 이벤트 처리
+// 푸시 이벤트 처리 (삭제)
+/*
 self.addEventListener('push', (event) => {
   console.log('[firebase-messaging-sw.js] 푸시 이벤트 수신:', event);
   
@@ -128,4 +145,5 @@ self.addEventListener('push', (event) => {
       console.error('[firebase-messaging-sw.js] 푸시 이벤트 처리 중 오류:', e);
     }
   }
-}); 
+});
+*/ 

@@ -103,7 +103,7 @@ const App = () => {
     }
   }, []);
 
-  // 알림 설정 함수
+  // 알림 설정 함수 (개선)
   const setupNotifications = async (userId) => {
     try {
       // 브라우저가 알림을 지원하는지 확인
@@ -119,24 +119,18 @@ const App = () => {
         return;
       }
 
-      // 알림 권한 요청
-      let permission = Notification.permission;
-      if (permission === 'default') {
-        console.log('알림 권한 요청 중...');
-        permission = await Notification.requestPermission();
+      // 알림 권한이 거부되었는지 먼저 확인
+      if (Notification.permission === 'denied') {
+        console.log('알림이 차단되었습니다. 브라우저 설정에서 허용해주세요.');
+        return; // 거부된 경우 함수 종료
       }
+      
+      // FCM 토큰 요청 (getFCMToken 내부에서 'default' 상태 시 권한 요청 처리)
+      const token = await getFCMToken(VAPID_KEY);
 
-      if (permission === 'granted') {
-        console.log('알림 권한이 허용되었습니다.');
-
-        // FCM 토큰 요청
-        const token = await getFCMToken(VAPID_KEY);
-        if (!token) {
-          console.log('FCM 토큰을 가져올 수 없습니다.');
-          return;
-        }
-
-        console.log('FCM 토큰 획득 성공');
+      // 토큰을 성공적으로 가져온 경우
+      if (token) {
+        console.log('FCM 토큰 획득 성공 (현재 권한:', Notification.permission, ')');
         setFcmToken(token);
 
         // 사용자 문서에 토큰 저장
@@ -189,27 +183,22 @@ const App = () => {
                 body: payload.notification?.body || '새로운 메시지가 있습니다'
               });
               
-              // iOS Safari에서는 서비스 워커가 제한적이므로 직접 알림 표시
-              if (deviceInfo?.isIOS && deviceInfo?.isSafari) {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                  try {
-                    new Notification(payload.notification?.title || '알림', {
-                      body: payload.notification?.body || '새로운 메시지가 있습니다',
-                      icon: '/icons/maskable_icon_x192.png'
-                    });
-                  } catch (error) {
-                    console.error('알림 표시 중 오류:', error);
-                  }
-                }
-              }
+              // TODO: Ant Design Mobile의 Notification 또는 Toast 컴포넌트 등을 사용하여
+              // 사용자에게 실제 알림 UI를 표시하는 로직을 여기에 구현해야 합니다.
+              // 예시: Toast.show({ content: payload.notification?.body || '새로운 메시지' });
             }
           })
           .catch((err) => console.error('메시지 수신 오류:', err));
           
-        return unsubscribe;
-      } else if (permission === 'denied') {
-        console.log('알림이 차단되었습니다. 브라우저 설정에서 허용해주세요.');
+        // TODO: 컴포넌트 언마운트 시 또는 로그아웃 시 unsubscribe 함수를 호출하여 리스너를 정리하는 로직 추가 고려
+        // return unsubscribe; 
+
+      } else {
+        // 토큰 가져오기 실패 (권한 거부 또는 기타 오류)
+        console.log('FCM 토큰을 가져올 수 없습니다. 최종 권한 상태:', Notification.permission);
+        // 사용자에게 알림 설정을 유도하는 메시지 표시 등을 고려할 수 있습니다.
       }
+
     } catch (error) {
       console.error('알림 설정 중 오류:', error);
     }
