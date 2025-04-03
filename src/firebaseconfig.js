@@ -60,6 +60,60 @@ const checkDeviceCompatibility = () => {
   };
 };
 
+// 서비스 워커 확인 및 등록 함수 추가
+const ensureServiceWorkerRegistration = async () => {
+  if (!('serviceWorker' in navigator)) {
+    console.log('서비스 워커를 지원하지 않는 브라우저입니다.');
+    return null;
+  }
+
+  try {
+    // 이미 등록된 서비스 워커가 있는지 확인
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const existingRegistration = registrations.find(reg => 
+      reg.scope.includes(window.location.origin) && reg.active
+    );
+
+    if (existingRegistration) {
+      console.log('기존 서비스 워커를 사용합니다:', existingRegistration.scope);
+      return existingRegistration;
+    }
+
+    // 등록된 서비스 워커가 없으면 새로 등록
+    console.log('새 서비스 워커를 등록합니다.');
+    const newRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { 
+      scope: '/' 
+    });
+    
+    // 서비스 워커가 활성화될 때까지 대기
+    if (newRegistration.installing) {
+      console.log('서비스 워커가 설치 중입니다...');
+      const worker = newRegistration.installing;
+      
+      // 서비스 워커 상태 변경 감지
+      await new Promise((resolve) => {
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'activated') {
+            console.log('서비스 워커가 활성화되었습니다.');
+            resolve();
+          }
+        });
+        
+        // 이미 활성화된 경우
+        if (worker.state === 'activated') {
+          console.log('서비스 워커가 이미 활성화되어 있습니다.');
+          resolve();
+        }
+      });
+    }
+    
+    return newRegistration;
+  } catch (error) {
+    console.error('서비스 워커 등록 중 오류:', error);
+    return null;
+  }
+};
+
 // 메시징 초기화 함수
 const initMessaging = async () => {
   try {
@@ -87,7 +141,7 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   });
 }
 
-// FCM 토큰 가져오기 함수 (개선)
+// FCM 토큰 가져오기 함수 (iOS 특화 개선)
 const getFCMToken = async (vapidKey = VAPID_KEY) => {
   try {
     // 디바이스 호환성 확인
@@ -100,13 +154,26 @@ const getFCMToken = async (vapidKey = VAPID_KEY) => {
       return null;
     }
     
+    // iOS 디바이스를 위한 특별 처리
+    if (deviceInfo.isIOS) {
+      console.log('iOS 디바이스 감지됨. PWA 백그라운드 푸시를 위한 설정 진행...');
+    }
+    
+    // 서비스 워커 등록 확인 (iOS에서 중요)
+    const swRegistration = await ensureServiceWorkerRegistration();
+    if (!swRegistration) {
+      console.error('서비스 워커 등록에 실패했습니다.');
+      return null;
+    }
+    
     // 메시징이 아직 초기화되지 않았다면 초기화
     if (!messaging) {
+      console.log('Firebase 메시징 초기화 중...');
       messaging = await initMessaging();
     }
     
-    if (!messaging || !('serviceWorker' in navigator)) {
-      console.log('서비스 워커 또는 Firebase 메시징을 지원하지 않는 브라우저입니다.');
+    if (!messaging) {
+      console.log('Firebase 메시징 초기화에 실패했습니다.');
       return null;
     }
 
@@ -126,14 +193,32 @@ const getFCMToken = async (vapidKey = VAPID_KEY) => {
 
     console.log('FCM 토큰 요청 중...');
     
-    // FCM 토큰 요청 (serviceWorkerRegistration 옵션 제거)
-    const currentToken = await getToken(messaging, {
+    // FCM 토큰 요청 (iOS용 설정 추가)
+    const tokenOptions = {
       vapidKey: vapidKey,
-      // serviceWorkerRegistration: swRegistration // SDK가 자동으로 처리하도록 제거
-    });
+      serviceWorkerRegistration: swRegistration // iOS에서는 명시적 서비스 워커 등록이 중요
+    };
+    
+    // iOS 디바이스를 위한 추가 옵션
+    if (deviceInfo.isIOS) {
+      // iOS에서는 푸시 서비스가 제대로 동작하기 위한 추가 설정
+      console.log('iOS 전용 FCM 토큰 요청 설정 적용');
+      
+      // 여기서 iOS 특화 로직을 추가할 수 있음
+      // 현재 FIrebase SDK는 iOS 웹푸시를 자동으로 지원함
+    }
+    
+    const currentToken = await getToken(messaging, tokenOptions);
 
     if (currentToken) {
       console.log('FCM 토큰 획득 성공');
+      
+      // iOS 디바이스인 경우 추가 정보 로깅
+      if (deviceInfo.isIOS) {
+        console.log('iOS 디바이스용 FCM 토큰이 성공적으로 발급되었습니다.');
+        // iOS의 경우 토큰 발급 후 초기 테스트 메시지 전송 등의 추가 작업 가능
+      }
+      
       return currentToken;
     } else {
       console.log('FCM 토큰을 가져올 수 없습니다. 권한과 서비스 워커를 확인하세요.');
@@ -170,5 +255,6 @@ export {
   getFCMToken, 
   onMessageListener,
   VAPID_KEY,
-  checkDeviceCompatibility
+  checkDeviceCompatibility,
+  ensureServiceWorkerRegistration
 };

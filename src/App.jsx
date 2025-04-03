@@ -3,12 +3,12 @@ import { useLocation, useNavigate, BrowserRouter, Routes, Route, Navigate } from
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
-import { auth, db, messaging, getFCMToken, onMessageListener, checkDeviceCompatibility, VAPID_KEY } from './firebaseconfig';
+import { auth, db, messaging, getFCMToken, onMessageListener, checkDeviceCompatibility, VAPID_KEY, ensureServiceWorkerRegistration } from './firebaseconfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus } from './redux/actions/authActions';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
-
+import { Modal } from 'antd-mobile';
 
 const App = () => {
   const dispatch = useDispatch();
@@ -18,6 +18,7 @@ const App = () => {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [deviceInfo, setDeviceInfo] = useState(null);
+  const [isFirstRun, setIsFirstRun] = useState(false);
 
   // PWA 설치 관련 이벤트 핸들러
   useEffect(() => {
@@ -40,13 +41,85 @@ const App = () => {
       console.log('PWA가 성공적으로 설치되었습니다');
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
+      // PWA 설치 후 첫 실행 여부 확인
+      setIsFirstRun(true);
+      
+      // iOS에서 PWA 설치 후 알림 권한 확인 
+      if (deviceInfo?.isIOS) {
+        // PWA 설치 직후 iOS에서는 알림 권한을 다시 확인
+        checkNotificationPermission();
+      }
     });
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', () => {});
     };
-  }, []);
+  }, [deviceInfo]);
+
+  // 첫 실행 감지 및 iOS 홈 화면 추가 여부 확인
+  useEffect(() => {
+    // iOS에서 홈 화면에 추가된 PWA 감지
+    const isRunningStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isIOSPWA = deviceInfo?.isIOS && (isRunningStandalone || window.navigator.standalone);
+    
+    // 앱이 처음 실행되었는지 확인 (localStorage 사용)
+    const hasRunBefore = localStorage.getItem('pwa_has_run_before');
+    
+    if (!hasRunBefore) {
+      console.log('앱 첫 실행 감지');
+      setIsFirstRun(true);
+      localStorage.setItem('pwa_has_run_before', 'true');
+      
+      // iOS PWA에서 첫 실행 시 추가 작업
+      if (isIOSPWA) {
+        console.log('iOS PWA 첫 실행 감지');
+        // 서비스 워커 등록 확인
+        ensureServiceWorkerRegistration();
+      }
+    }
+  }, [deviceInfo]);
+
+  // 알림 권한 확인 함수
+  const checkNotificationPermission = async () => {
+    if (!('Notification' in window)) return;
+    
+    if (Notification.permission !== 'granted') {
+      // iOS에서 알림 권한 요청이 필요한 경우 모달 표시
+      if (deviceInfo?.isIOS) {
+        Modal.confirm({
+          content: (
+            <div style={{ padding: '10px 0' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px', textAlign: 'center' }}>
+                알림 활성화가 필요합니다
+              </h3>
+              <p style={{ fontSize: '14px', lineHeight: 1.5, color: '#666', textAlign: 'center' }}>
+                iOS에서 백그라운드 알림을 받으려면 알림 권한을 허용해주세요.
+              </p>
+            </div>
+          ),
+          confirmText: '알림 설정하기',
+          cancelText: '나중에',
+          onConfirm: async () => {
+            // iOS에서 알림 권한 요청
+            try {
+              const token = await getFCMToken(VAPID_KEY);
+              if (token) {
+                setFcmToken(token);
+                console.log('iOS 디바이스에서 알림 권한 획득 성공');
+                Modal.alert({
+                  content: '알림이 성공적으로 활성화되었습니다!',
+                  confirmText: '확인',
+                });
+              }
+            } catch (error) {
+              console.error('iOS 알림 권한 요청 오류:', error);
+            }
+          }
+        });
+      }
+    }
+  };
 
   // PWA 설치 함수
   const installPwa = async () => {
@@ -100,10 +173,20 @@ const App = () => {
       const info = checkDeviceCompatibility();
       setDeviceInfo(info);
       console.log('디바이스 호환성 정보:', info);
+      
+      // iOS 홈 화면 추가 여부 확인
+      const isRunningStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isIOSPWA = info?.isIOS && (isRunningStandalone || window.navigator.standalone);
+      
+      if (isIOSPWA) {
+        console.log('iOS PWA 모드로 실행 중');
+        // iOS PWA에서 서비스 워커 등록 확인
+        ensureServiceWorkerRegistration();
+      }
     }
   }, []);
 
-  // 알림 설정 함수 (개선)
+  // 알림 설정 함수 (iOS 개선)
   const setupNotifications = async (userId) => {
     try {
       // 브라우저가 알림을 지원하는지 확인
@@ -117,6 +200,11 @@ const App = () => {
         console.log('iOS 16.4 미만에서는 웹 푸시 알림이 지원되지 않습니다.');
         // 사용자에게 알림 지원 불가 메시지를 표시할 수 있음
         return;
+      }
+
+      // iOS PWA에서 서비스 워커 등록 확인 (백그라운드 알림에 중요)
+      if (deviceInfo?.isIOS) {
+        await ensureServiceWorkerRegistration();
       }
 
       // 알림 권한이 거부되었는지 먼저 확인
@@ -133,6 +221,11 @@ const App = () => {
         console.log('FCM 토큰 획득 성공 (현재 권한:', Notification.permission, ')');
         setFcmToken(token);
 
+        // iOS 디바이스인 경우 추가 확인
+        if (deviceInfo?.isIOS) {
+          console.log('iOS 디바이스에서 FCM 토큰 획득 성공. 백그라운드 알림이 가능합니다.');
+        }
+
         // 사용자 문서에 토큰 저장
         try {
           // 디바이스 정보
@@ -142,6 +235,9 @@ const App = () => {
             platform: deviceInfo?.isIOS ? 'iOS' : 
                       /android/i.test(navigator.userAgent) ? 'Android' : 'Web',
             userAgent: navigator.userAgent,
+            // iOS PWA 상태 추가
+            isPWA: window.matchMedia('(display-mode: standalone)').matches || 
+                  (deviceInfo?.isIOS && window.navigator.standalone),
             // 기기 고유 식별자 대신 브라우저 세션마다 다른 임의의 ID 생성
             deviceId: `${Math.random().toString(36).substring(2, 15)}_${Date.now().toString(36)}`,
           };
@@ -175,7 +271,11 @@ const App = () => {
       } else {
         // 토큰 가져오기 실패 (권한 거부 또는 기타 오류)
         console.log('FCM 토큰을 가져올 수 없습니다. 최종 권한 상태:', Notification.permission);
-        // 사용자에게 알림 설정을 유도하는 메시지 표시 등을 고려할 수 있습니다.
+
+        // iOS 디바이스에서 알림 권한이 필요한 경우 알림
+        if (deviceInfo?.isIOS && Notification.permission !== 'granted') {
+          console.log('iOS 디바이스에서 알림 권한이 없습니다. 권한 요청이 필요합니다.');
+        }
       }
 
     } catch (error) {
