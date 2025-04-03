@@ -72,15 +72,50 @@ self.addEventListener('push', (e) => {
   dispatchEvent(newEvent);
 });
 
-// 필수: 백그라운드 메시지 핸들러 (이제 수정된 push 이벤트의 data를 처리)
+// 필수: 백그라운드 메시지 핸들러
 messaging.onBackgroundMessage((payload) => {
-  // The payload received here should now have the notification fields merged into the data field
-  // if the push event modification worked correctly.
-  console.log('[firebase-messaging-sw.js] 백그라운드 메시지 수신 (data 전용 처리, 수정된 이벤트):', payload);
+  // 수신된 페이로드 로깅 (notification 포함 여부 확인용)
+  console.log('[firebase-messaging-sw.js] 백그라운드 메시지 수신:', payload);
 
-  // data 페이로드가 없으면 처리 중단 (서버에서 data 필드를 보내야 함)
+  // --- Start: payload.notification 확인 --- 
+  if (payload.notification) {
+    // payload.notification 객체가 존재하면 FCM SDK가 알림을 표시할 것으로 간주
+    console.log('[firebase-messaging-sw.js] "notification" 페이로드 감지. SDK가 알림을 처리할 것으로 예상합니다. showNotification() 호출 안 함.');
+
+    // notification 객체가 있더라도 data 페이로드에 다른 정보(예: 배지 카운트)가 있다면 처리
+    if (payload.data && 'setAppBadge' in navigator) {
+      const badgeCount = parseInt(payload.data.badgeCount, 10);
+      if (!isNaN(badgeCount) && badgeCount > 0) {
+        navigator.setAppBadge(badgeCount).catch((error) => {
+          console.error('[firebase-messaging-sw.js] 앱 배지 설정 실패 (notification 있음): ', error);
+        });
+      } else {
+        if ('clearAppBadge' in navigator) {
+          navigator.clearAppBadge().catch((error) => {
+            console.error('[firebase-messaging-sw.js] 앱 배지 제거 실패 (notification 있음): ', error);
+          });
+        }
+      }
+    } else if ('setAppBadge' in navigator) {
+        // data는 없지만 notification은 있는 경우 -> 배지 제거 시도
+        if ('clearAppBadge' in navigator) {
+            navigator.clearAppBadge().catch((error) => {
+                console.error('[firebase-messaging-sw.js] 앱 배지 제거 실패 (notification만 있음): ', error);
+            });
+        }
+    }
+
+    // 여기서 showNotification을 호출하지 않고 핸들러 종료
+    return; 
+  }
+  // --- End: payload.notification 확인 --- 
+
+  // --- payload.notification이 없을 경우 (데이터 전용 메시지) 아래 로직 실행 ---
+  console.log('[firebase-messaging-sw.js] 데이터 전용 메시지 수신. 커스텀 알림을 생성합니다.');
+
+  // data 페이로드가 없으면 처리 중단 (데이터 전용 메시지라도 data는 있어야 함)
   if (!payload.data) {
-    console.warn('[firebase-messaging-sw.js] 데이터 페이로드 없이 메시지 수신:', payload);
+    console.warn('[firebase-messaging-sw.js] 데이터 페이로드 없이 메시지 수신 (notification도 없음):', payload);
     return;
   }
 
