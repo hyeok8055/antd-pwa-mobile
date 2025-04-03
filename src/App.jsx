@@ -172,27 +172,6 @@ const App = () => {
           console.error('FCM 토큰 저장 중 오류:', error);
         }
 
-        // // 포그라운드 메시지 수신 처리
-        // const unsubscribe = onMessageListener()
-        //   .then((payload) => {
-        //     console.log('포그라운드 메시지 수신:', payload);
-            
-        //     if (payload) {
-        //       setNotification({
-        //         title: payload.notification?.title || '알림',
-        //         body: payload.notification?.body || '새로운 메시지가 있습니다'
-        //       });
-              
-        //       // TODO: Ant Design Mobile의 Notification 또는 Toast 컴포넌트 등을 사용하여
-        //       // 사용자에게 실제 알림 UI를 표시하는 로직을 여기에 구현해야 합니다.
-        //       // 예시: Toast.show({ content: payload.notification?.body || '새로운 메시지' });
-        //     }
-        //   })
-        //   .catch((err) => console.error('메시지 수신 오류:', err));
-          
-        // // TODO: 컴포넌트 언마운트 시 또는 로그아웃 시 unsubscribe 함수를 호출하여 리스너를 정리하는 로직 추가 고려
-        // // return unsubscribe; 
-
       } else {
         // 토큰 가져오기 실패 (권한 거부 또는 기타 오류)
         console.log('FCM 토큰을 가져올 수 없습니다. 최종 권한 상태:', Notification.permission);
