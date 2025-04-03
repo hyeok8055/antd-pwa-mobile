@@ -156,42 +156,7 @@ const onMessageListener = () => {
   return new Promise((resolve) => {
     onMessage(messaging, (payload) => {
       console.log('[firebaseconfig.js] 포그라운드 메시지 수신:', payload);
-      
-      // 포그라운드에서는 앱 UI로 알림을 처리하므로, 여기서 브라우저 알림을 직접 표시하지 않음.
-      // 페이로드만 resolve하여 App.jsx에서 처리하도록 함.
       resolve(payload); 
-      
-      /* 삭제: 포그라운드에서 서비스 워커 통한 알림 표시 로직
-      // 브라우저 알림 직접 표시 (iOS Safari와의 호환성을 위해)
-      if (Notification.permission === 'granted') {
-        let title = payload.notification?.title || '알림';
-        let options = {
-          body: payload.notification?.body || '새로운 메시지가 있습니다',
-          icon: '/icons/maskable_icon_x192.png',
-          badge: '/icons/favicon-96x96.png',
-          tag: 'notification-' + Date.now(),
-          data: payload.data || {},
-          vibrate: [200, 100, 200]
-        };
-        
-        try {
-          // 알림 표시
-          navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification(title, options);
-          }).catch(err => {
-            // 서비스 워커를 통한 알림 실패 시 브라우저 API 직접 사용
-            console.error('[firebaseconfig.js] 서비스 워커 통한 알림 표시 실패, 직접 표시 시도:', err);
-            try {
-              new Notification(title, options);
-            } catch (e) {
-              console.error('[firebaseconfig.js] 직접 알림 표시 실패:', e);
-            }
-          });
-        } catch (error) {
-          console.error('[firebaseconfig.js] 포그라운드 알림 표시 중 오류:', error);
-        }
-      }
-      */
     });
   });
 };

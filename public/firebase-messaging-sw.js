@@ -13,19 +13,76 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 필수: 백그라운드 메시지 핸들러 (Stack Overflow 해결 방법 적용)
+class CustomPushEvent extends Event {
+  constructor(data) {
+    super('push');
+
+    Object.assign(this, data);
+    this.custom = true;
+  }
+}
+
+/*
+ * Overrides push notification data, to avoid having 'notification' key and firebase blocking
+ * the message handler from being called
+ */
+self.addEventListener('push', (e) => {
+  // Skip if event is our own custom event
+  if (e.custom) return;
+
+  // Keep old event data to override
+  const oldData = e.data;
+
+  // Create a new event to dispatch, pull values from notification key and put it in data key,
+  // and then remove notification key
+  const newEvent = new CustomPushEvent({
+    data: {
+      json() {
+        // Make sure oldData.json() is called only once
+        const originalPayload = oldData.json();
+        console.log('[firebase-messaging-sw.js] Original push event data:', originalPayload);
+
+        const newData = { ...originalPayload }; // Create a mutable copy
+
+        if (newData.notification) {
+          // Merge notification data into data, potentially overwriting existing keys if needed
+          newData.data = {
+            ...(newData.data || {}), // Preserve existing data fields
+            ...newData.notification, // Merge notification fields
+          };
+          delete newData.notification; // Remove the original notification key
+          console.log('[firebase-messaging-sw.js] Modified push event data (notification moved to data):', newData);
+        } else {
+          console.log('[firebase-messaging-sw.js] No notification key found in original data.');
+        }
+        return newData;
+      },
+      // Keep other potential methods if they exist, though json() is the primary one
+      arrayBuffer: oldData.arrayBuffer.bind(oldData),
+      blob: oldData.blob.bind(oldData),
+      text: oldData.text.bind(oldData),
+    },
+    waitUntil: e.waitUntil.bind(e),
+  });
+
+  // Stop event propagation for the original event
+  e.stopImmediatePropagation();
+  console.log('[firebase-messaging-sw.js] Dispatching modified push event.');
+  // Dispatch the new wrapped event
+  dispatchEvent(newEvent);
+});
+
+// 필수: 백그라운드 메시지 핸들러 (이제 수정된 push 이벤트의 data를 처리)
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] 백그라운드 메시지 수신 (data 전용 처리):', payload);
+  // The payload received here should now have the notification fields merged into the data field
+  // if the push event modification worked correctly.
+  console.log('[firebase-messaging-sw.js] 백그라운드 메시지 수신 (data 전용 처리, 수정된 이벤트):', payload);
 
   // data 페이로드가 없으면 처리 중단 (서버에서 data 필드를 보내야 함)
   if (!payload.data) {
     console.warn('[firebase-messaging-sw.js] 데이터 페이로드 없이 메시지 수신:', payload);
     return;
   }
-
-  // --- payload.notification 객체 참조 제거 ---
-  // 알림 필드가 있는 경우 (FCM 콘솔에서 보낸 경우) -> 이제 사용 안 함
-  // if (payload.notification) { ... }
 
   // --- 오직 payload.data 객체만을 사용하여 알림 구성 ---
   const notificationTitle = payload.data.title || '알림'; // data.title 사용, 없으면 기본값
