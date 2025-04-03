@@ -1,31 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GoogleButton from 'react-google-button';
-import { auth, db, checkDeviceCompatibility, getFCMToken, VAPID_KEY } from "../../firebaseconfig";
+import { auth, db, checkDeviceCompatibility, getFCMToken, VAPID_KEY, ensureServiceWorkerRegistration } from "../../firebaseconfig";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useDispatch } from 'react-redux';
 import { setAuthStatus } from '../../redux/actions/authActions';
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { Modal, Button, Space, Image } from 'antd-mobile';
+import { Modal, Button, Space, Image, SpinLoading } from 'antd-mobile';
 
 const GoogleLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [deviceInfo, setDeviceInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 디바이스 정보 확인
+  // 디바이스 정보 확인 및 초기 설정
   useEffect(() => {
-    const info = checkDeviceCompatibility();
-    setDeviceInfo(info);
-
-    // iOS 디바이스인 경우 알림 요청 모달 표시 여부 결정
-    if (info?.isIOS) {
-      // 알림 권한 상태 확인
-      if (Notification.permission !== 'granted') {
-        setShowNotificationModal(true);
+    const initializeComponent = async () => {
+      try {
+        setIsLoading(true);
+        
+        // 디바이스 호환성 정보 확인
+        const info = checkDeviceCompatibility();
+        setDeviceInfo(info);
+        console.log('디바이스 정보:', info);
+        
+        // iOS 디바이스인 경우 서비스 워커 등록 확인
+        if (info?.isIOS) {
+          console.log('iOS 디바이스 감지. 서비스 워커 등록 확인 중...');
+          await ensureServiceWorkerRegistration();
+          
+          // 알림 권한 상태 확인
+          if (Notification.permission !== 'granted') {
+            setShowNotificationModal(true);
+          }
+        }
+      } catch (error) {
+        console.error('컴포넌트 초기화 중 오류:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+    
+    initializeComponent();
   }, []);
 
   // 알림 권한 요청 함수
@@ -187,6 +205,16 @@ const GoogleLogin = () => {
       />
     );
   };
+
+  // 로딩 중 표시
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+        <SpinLoading color='primary' style={{ '--size': '48px' }} />
+        <p className="mt-4 text-gray-600">로딩 중...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
