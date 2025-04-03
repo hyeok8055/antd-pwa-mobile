@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GoogleButton from 'react-google-button';
-import { auth, db, checkDeviceCompatibility, getFCMToken, VAPID_KEY, ensureServiceWorkerRegistration } from "../../firebaseconfig";
+import { auth, db, checkDeviceCompatibility, VAPID_KEY, ensureServiceWorkerRegistration } from "../../firebaseconfig";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useDispatch } from 'react-redux';
 import { setAuthStatus } from '../../redux/actions/authActions';
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { Modal, Button, Space, Image, SpinLoading } from 'antd-mobile';
+import { SpinLoading } from 'antd-mobile';
 
 const GoogleLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [deviceInfo, setDeviceInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,11 +29,6 @@ const GoogleLogin = () => {
         if (info?.isIOS) {
           console.log('iOS 디바이스 감지. 서비스 워커 등록 확인 중...');
           await ensureServiceWorkerRegistration();
-          
-          // 알림 권한 상태 확인
-          if (Notification.permission !== 'granted') {
-            setShowNotificationModal(true);
-          }
         }
       } catch (error) {
         console.error('컴포넌트 초기화 중 오류:', error);
@@ -45,45 +39,6 @@ const GoogleLogin = () => {
     
     initializeComponent();
   }, []);
-
-  // 알림 권한 요청 함수
-  const requestNotificationPermission = async () => {
-    try {
-      // iOS 16.4 미만 버전 확인
-      if (deviceInfo?.isIOS && !deviceInfo?.isCompatibleIOS) {
-        Modal.alert({
-          content: 'iOS 16.4 버전 이상에서만 알림을 지원합니다. iOS를 업데이트해주세요.',
-          confirmText: '확인',
-        });
-        setShowNotificationModal(false);
-        return;
-      }
-
-      // 알림 권한 요청 및 FCM 토큰 발급
-      const token = await getFCMToken(VAPID_KEY);
-      
-      if (token) {
-        Modal.alert({
-          content: '알림이 성공적으로 설정되었습니다!',
-          confirmText: '확인',
-        });
-      } else {
-        Modal.alert({
-          content: '알림 설정에 실패했습니다. 브라우저 설정에서 알림을 허용해주세요.',
-          confirmText: '확인',
-        });
-      }
-      
-      setShowNotificationModal(false);
-    } catch (error) {
-      console.error('알림 권한 요청 중 오류:', error);
-      Modal.alert({
-        content: '알림 설정 중 오류가 발생했습니다.',
-        confirmText: '확인',
-      });
-      setShowNotificationModal(false);
-    }
-  };
 
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
@@ -132,80 +87,6 @@ const GoogleLogin = () => {
     }
   };
 
-  // iOS 알림 요청 모달
-  const renderIOSNotificationModal = () => {
-    return (
-      <Modal
-        visible={showNotificationModal}
-        content={
-          <div style={{ 
-            padding: '10px 0', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center'
-          }}>
-            <Image
-              src="/icons/notification-icon.png" 
-              alt="알림 아이콘"
-              width={80}
-              height={80}
-              style={{ 
-                marginBottom: '20px', 
-                borderRadius: '15px',
-                border: '1px solid #eee'
-              }}
-              fallback="/icons/maskable_icon_x192.png"
-            />
-            <h3 style={{ 
-              fontSize: '18px', 
-              fontWeight: 'bold', 
-              margin: '0 0 15px 0', 
-              textAlign: 'center' 
-            }}>
-              알림 권한을 허용해주세요
-            </h3>
-            <p style={{ 
-              fontSize: '14px', 
-              lineHeight: '1.5', 
-              margin: '0 0 10px 0', 
-              color: '#666',
-              textAlign: 'center'
-            }}>
-              중요 정보와 업데이트를 놓치지 않도록 푸시 알림을 활성화해주세요.
-            </p>
-            <p style={{ 
-              fontSize: '14px', 
-              lineHeight: '1.5', 
-              margin: '0 0 20px 0', 
-              color: '#666',
-              textAlign: 'center'
-            }}>
-              iOS에서는 알림 권한을 허용해야 앱이 백그라운드에서도 알림을 받을 수 있습니다.
-            </p>
-          </div>
-        }
-        closeOnAction
-        actions={[
-          {
-            key: 'cancel',
-            text: '나중에',
-            onClick: () => setShowNotificationModal(false)
-          },
-          {
-            key: 'confirm',
-            text: '알림 허용하기',
-            bold: true,
-            danger: false,
-            onClick: requestNotificationPermission,
-            style: {
-              color: '#5FDD9D'
-            }
-          },
-        ]}
-      />
-    );
-  };
-
   // 로딩 중 표시
   if (isLoading) {
     return (
@@ -228,9 +109,6 @@ const GoogleLogin = () => {
           style={{ width: '100%', margin: '0 auto' }}
         />
       </div>
-
-      {/* iOS 알림 권한 요청 모달 */}
-      {renderIOSNotificationModal()}
     </div>
   );
 };
