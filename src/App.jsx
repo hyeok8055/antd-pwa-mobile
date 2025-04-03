@@ -157,7 +157,7 @@ const App = () => {
         } else {
           console.log('FCM 토큰을 가져올 수 없습니다. (권한은 granted 상태)');
           // 서비스 워커 문제일 수 있음
-          Modal.alert({ content: '알림 설정 중 문제가 발생했습니다. (토큰 발급 실패)', confirmText: '확인' });
+          Modal.alert({ content: '알림 설정 중 문제가 습니다. (토큰 발급 실패)', confirmText: '확인' });
         }
       } else if (currentPermission === 'denied') {
         console.log('알림 권한이 차단되었습니다.');
