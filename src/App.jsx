@@ -181,7 +181,7 @@ const App = () => {
                   /android/i.test(navigator.userAgent) ? 'Android' : 'Web',
         userAgent: navigator.userAgent,
         isPWA: window.matchMedia('(display-mode: standalone)').matches ||
-              (deviceInfo?.isIOS && window.navigator.standalone),
+              (deviceInfo?.isIOS === true && window.navigator.standalone) || false,
         // deviceId는 동일 기기/브라우저 세션에서 재로그인 시 토큰 업데이트를 위해 필요할 수 있음
         // 여기서는 간단하게 매번 새 문서를 추가하는 방식으로 구현 (개선 가능)
         deviceId: `${Math.random().toString(36).substring(2, 15)}_${Date.now().toString(36)}`,
