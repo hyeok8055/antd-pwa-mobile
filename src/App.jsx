@@ -107,7 +107,8 @@ const App = () => {
       {/* PWA 설치 버튼 */}
       {showInstallPrompt && (
         <div style={{ 
-          position: 'fixed', 
+          position: 'fixed',
+          width: '70%',
           top: '10px', 
           left: '50%', 
           transform: 'translateX(-50%)', 
@@ -118,22 +119,28 @@ const App = () => {
           zIndex: 10000,
           boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
           display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
+          justifyContent: 'space-between', // 변경: 좌우 끝으로 정렬
+          alignItems: 'center', // 변경: 세로 중앙 정렬
         }}>
-          <span>앱으로 설치하여 더 나은 경험을 누려보세요!</span>
+          <span>모든 기능을 사용하기 위해 <br />앱 설치를 권장합니다</span>
           <button 
             onClick={installPwa}
             style={{
               backgroundColor: 'white',
               color: '#4CAF50',
               border: 'none',
-              padding: '5px 10px',
+              padding: '8px 16px',
               borderRadius: '3px',
               cursor: 'pointer'
             }}
           >
-            설치하기
+            <span
+              style={{
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >설치
+            </span>
           </button>
         </div>
       )}

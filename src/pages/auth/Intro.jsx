@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Select, Button, Radio } from 'antd';
+import { Form, Input, Select, Button, Radio, Card, Typography, Row, Col } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseconfig';
@@ -54,47 +54,71 @@ const Intro = () => {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-100 p-4">
-      <div className="bg-white rounded-xl shadow-md p-8 w-full max-w-md mt-[25%]">
-        <div className="font-bold text-center mb-6" style={{fontFamily: 'Pretendard-800', letterSpacing: '1px', fontSize: '28px'}}>프로필 설정</div>
+    <div style={{ padding: '20px', minHeight: '100vh', backgroundColor: '#f0f2f5', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <Card 
+        style={{ 
+          maxWidth: '450px', 
+          width: '100%', 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
+        }}
+      >
+        <Typography.Title 
+          level={2} 
+          style={{ 
+            textAlign: 'center', 
+            marginBottom: '30px', 
+            fontFamily: 'Pretendard-800', 
+            color: '#333',
+            letterSpacing: '1px' 
+          }}
+        >
+          프로필 설정
+        </Typography.Title>
         <Form
           form={form}
           layout="vertical"
           onFinish={onFinish}
+          size="large" // 폼 요소 크기 조정
         >
-          <Form.Item
-            name="height"
-            label="키 (cm)"
-            rules={[{ required: true, message: '키를 입력해주세요' }]}
-          >
-            <Input placeholder="키를 입력해주세요" type="number" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="height"
+                label={<span style={{ fontFamily: 'Pretendard-600' }}>키 (cm)</span>}
+                rules={[{ required: true, message: '키를 입력해주세요' }]}
+              >
+                <Input placeholder="예) 175" type="number" style={{ borderRadius: '8px' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="age"
+                label={<span style={{ fontFamily: 'Pretendard-600' }}>나이</span>}
+                rules={[{ required: true, message: '나이를 입력해주세요' }]}
+              >
+                <Input placeholder="예) 25" type="number" style={{ borderRadius: '8px' }} />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             name="gender"
-            label="성별"
+            label={<span style={{ fontFamily: 'Pretendard-600' }}>성별</span>}
             rules={[{ required: true, message: '성별을 선택해주세요' }]}
           >
-            <Radio.Group>
-              <Radio value="male">남성</Radio>
-              <Radio value="female">여성</Radio>
+            <Radio.Group style={{ width: '100%' }}>
+              <Radio.Button value="male" style={{ width: '50%', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>남성</Radio.Button>
+              <Radio.Button value="female" style={{ width: '50%', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>여성</Radio.Button>
             </Radio.Group>
           </Form.Item>
 
           <Form.Item
-            name="age"
-            label="나이"
-            rules={[{ required: true, message: '나이를 입력해주세요' }]}
-          >
-            <Input placeholder="나이를 입력해주세요" type="number" />
-          </Form.Item>
-
-          <Form.Item
             name="goal"
-            label="목표"
+            label={<span style={{ fontFamily: 'Pretendard-600' }}>목표</span>}
             rules={[{ required: true, message: '목표를 선택해주세요' }]}
           >
-            <Select onChange={handleGoalChange}>
+            <Select onChange={handleGoalChange} placeholder="목표를 선택해주세요" style={{ borderRadius: '8px' }}>
               <Option value="diet">다이어트</Option>
               <Option value="bulk">벌크업</Option>
               <Option value="bodyprofile">바디프로필</Option>
@@ -107,24 +131,33 @@ const Intro = () => {
           {showCustomGoal && (
             <Form.Item
               name="customGoalText"
-              label="목표 직접 입력"
+              label={<span style={{ fontFamily: 'Pretendard-600' }}>목표 직접 입력</span>}
               rules={[{ required: true, message: '목표를 입력해주세요' }]}
             >
-              <Input placeholder="목표를 입력해주세요" />
+              <Input placeholder="목표를 입력해주세요" style={{ borderRadius: '8px' }} />
             </Form.Item>
           )}
 
-          <Form.Item>
+          <Form.Item style={{ marginTop: '30px' }}>
             <Button
               type="primary"
               htmlType="submit"
-              className="w-full bg-green-500 hover:bg-green-600 h-[45px]"
+              block // 버튼 너비를 100%로 설정
+              style={{ 
+                height: '50px', 
+                borderRadius: '8px', 
+                backgroundColor: '#5FDD9D', // FoodList의 메인 컬러 사용
+                borderColor: '#5FDD9D',
+                boxShadow: '0 2px 6px rgba(95, 221, 157, 0.4)'
+              }}
             >
-              <div className="text-white" style={{fontFamily: 'Pretendard-700', letterSpacing: '1.5px', fontSize: '16px'}}>설정 완료</div>
+              <span style={{ fontFamily: 'Pretendard-700', fontSize: '16px', letterSpacing: '1px' }}>
+                설정 완료
+              </span>
             </Button>
           </Form.Item>
         </Form>
-      </div>
+      </Card>
     </div>
   );
 };

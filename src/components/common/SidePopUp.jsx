@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Select, Divider } from 'antd';
-import { Popup, Space, Button, Avatar, Form, Input, Radio, Toast } from 'antd-mobile';
+import { Typography, Select } from 'antd';
+import { Popup, Space, Button, Avatar, Form, Input, Radio, Toast, List } from 'antd-mobile';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseconfig';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import {
+  UserOutline,
+  EditSOutline,
+  CheckCircleOutline,
+  CloseCircleOutline,
+  UndoOutline,
+  AppstoreOutline,
+  LoopOutline,
+} from 'antd-mobile-icons';
 
 const { Text } = Typography;
 
@@ -46,11 +55,29 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
   const handleSave = async (values) => {
     try {
       const userRef = doc(db, "users", uid);
-      await updateDoc(userRef, values);
-      setUserInfo(values);
+      // 목표값이 '기타'일 경우 customGoalText 사용
+      const finalValues = {
+        ...values,
+        goal: values.goal === 'customGoal' ? values.customGoalText : values.goal,
+      };
+      // customGoalText 필드는 저장하지 않음 (이미 goal에 반영됨)
+      if (finalValues.customGoalText) {
+        delete finalValues.customGoalText;
+      }
+
+      await updateDoc(userRef, finalValues);
+      setUserInfo(finalValues); // 업데이트된 정보로 상태 변경
       setIsEditing(false);
+      Toast.show({
+        icon: <CheckCircleOutline />,
+        content: '정보가 저장되었습니다.',
+      });
     } catch (error) {
       console.error("정보 업데이트 실패:", error);
+      Toast.show({
+        icon: <CloseCircleOutline />,
+        content: '정보 저장에 실패했습니다.',
+      });
     }
   };
 
@@ -60,9 +87,8 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
       duration: 1000,
     });
 
-    // 새로고침 후 /main으로 리다이렉트
     setTimeout(() => {
-      window.location.href = 'https://calorie-sync.netlify.app';
+      window.location.reload(true);
     }, 500);
   };
 
@@ -74,149 +100,157 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
   // 관리자 이메일인지 확인
   const isAdmin = ADMIN_EMAILS.includes(email);
 
+  // 목표 텍스트 변환 함수
+  const getGoalText = (goal) => {
+    switch (goal) {
+      case 'diet': return '다이어트';
+      case 'bulk': return '벌크업';
+      case 'bodyprofile': return '바디프로필';
+      case 'diabetes': return '혈당관리';
+      case 'fitness': return '체력증진';
+      default: return goal; // '기타' 또는 직접 입력된 텍스트
+    }
+  };
+
   return (
     <Popup
       visible={visible}
       onMaskClick={onClose}
       position='right'
-      bodyStyle={{ width: '60vw', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
+      bodyStyle={{ width: '75vw', maxWidth: '300px', minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8f9fa' }}
     >
       {/* 상단 영역 */}
       <div
         style={{
-          width: '100%',
-          backgroundColor: 'rgba(95, 221, 157, 0.8)',
-          padding: '16px',
+          background: 'linear-gradient(to bottom, #a6f0c6, #79e2a8)',
+          padding: '24px 16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
-        }}>
-        <Space direction='vertical' style={{ '--gap': '3px' }}>
-          <Avatar size={64} src='' style={{ marginTop: "8px" }} />
-          <Text style={{ letterSpacing: '5px', fontSize: '25px', fontWeight: '800', color: 'black', marginBottom: '0px' }}>{userName}</Text>
-          <Text style={{ letterSpacing: '1px', fontSize: '12px', fontWeight: '400', color: 'black' }}>{email}</Text>
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <Avatar icon={<UserOutline />} size={64} style={{ backgroundColor: '#5FDD9D', '--size': '64px' }} />
+        <Space direction='vertical' align='center' style={{ '--gap': '4px' }}>
+          <Text style={{ fontSize: '18px', fontWeight: '600', color: '#333', fontFamily: 'Pretendard-600' }}>{userName}</Text>
+          <Text style={{ fontSize: '13px', fontWeight: '400', color: '#555', fontFamily: 'Pretendard-400' }}>{email}</Text>
         </Space>
       </div>
 
       {/* 사용자 정보 영역 */}
-      <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {!isEditing ? (
-          // 정보 표시 모드
-          <div className="space-y-4" style={{padding: '4px', marginTop: '8px'}}>
-            <div style={{fontFamily: 'Pretendard-800', letterSpacing: '1px', fontSize: '16px', marginBottom: '16px'}}>프로필 정보</div>
-            <Divider />
-            <div>
-              <Text style={{ fontWeight: 'bold', fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '16px' }}>키:</Text>
-              <Text> {userInfo?.height}cm</Text>
-            </div>
-            <div>
-              <Text style={{ fontWeight: 'bold', fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '16px' }}>성별:</Text>
-              <Text> {userInfo?.gender === 'male' ? '남성' : '여성'}</Text>
-            </div>
-            <div>
-              <Text style={{ fontWeight: 'bold', fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '16px' }}>나이:</Text>
-              <Text> {userInfo?.age}세</Text>
-            </div>
-            <div>
-              <Text style={{ fontWeight: 'bold', fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '16px' }}>목표:</Text>
-              <Text> {userInfo?.goal}</Text>
-            </div>
-            <Button color='primary' onClick={handleEdit} style={{ marginTop: '32px', width: '100%', height: '30px' }}>
-              <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>정보 수정</div>
-            </Button>
-            <Button color='default' onClick={refreshApp} style={{ marginTop: '8px', width: '100%', height: '30px' }}>
-              <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>새로고침</div>
-            </Button>
-            
-            {/* 관리자 버튼은 특정 이메일을 가진 사용자에게만 표시 */}
-            {isAdmin && (
-              <Button color='success' onClick={handleAdminPageClick} style={{ marginTop: '8px', width: '100%', height: '30px' }}>
-                <div style={{fontFamily: 'Pretendard-500', letterSpacing: '1.5px', fontSize: '12px'}}>음식 데이터 관리</div>
+          // 정보 표시 모드 (List 사용)
+          <List header={<div style={{ fontFamily: 'Pretendard-700', fontSize: '16px', padding: '12px 16px', color: '#333' }}>프로필 정보</div>} style={{ '--border-top': 'none', '--border-bottom': 'none', background: 'transparent' }}>
+            <List.Item extra={`${userInfo?.height || '-'} cm`}><Text style={{ fontFamily: 'Pretendard-500' }}>키</Text></List.Item>
+            <List.Item extra={userInfo?.gender === 'male' ? '남성' : userInfo?.gender === 'female' ? '여성' : '-'}><Text style={{ fontFamily: 'Pretendard-500' }}>성별</Text></List.Item>
+            <List.Item extra={`${userInfo?.age || '-'} 세`}><Text style={{ fontFamily: 'Pretendard-500' }}>나이</Text></List.Item>
+            <List.Item extra={getGoalText(userInfo?.goal) || '-'}><Text style={{ fontFamily: 'Pretendard-500' }}>목표</Text></List.Item>
+
+            {/* 버튼 영역 */}
+            <div style={{ padding: '16px', marginTop: '16px' }}>
+              <Button block color='primary' fill='solid' shape='rounded' onClick={handleEdit} style={{ marginBottom: '12px', '--background-color': '#5FDD9D', '--border-color': '#5FDD9D' }}>
+                <Space align='center'><EditSOutline /><span style={{ fontFamily: 'Pretendard-600' }}>정보 수정</span></Space>
               </Button>
-            )}
-          </div>
+              <Button block fill='outline' shape='rounded' onClick={refreshApp} style={{ marginBottom: '12px' }}>
+                 <Space align='center'><LoopOutline /><span style={{ fontFamily: 'Pretendard-600' }}>새로고침</span></Space>
+              </Button>
+              {isAdmin && (
+                <Button block fill='outline' shape='rounded' color='success' onClick={handleAdminPageClick}>
+                  <Space align='center'><AppstoreOutline /><span style={{ fontFamily: 'Pretendard-600' }}>음식 데이터 관리</span></Space>
+                </Button>
+              )}
+            </div>
+          </List>
         ) : (
           // 정보 수정 모드
           <Form
             form={form}
             onFinish={handleSave}
             layout='vertical'
-            initialValues={userInfo}
+            initialValues={{ ...userInfo, customGoalText: userInfo?.goal && !['diet', 'bulk', 'bodyprofile', 'diabetes', 'fitness'].includes(userInfo.goal) ? userInfo.goal : undefined, goal: userInfo?.goal && !['diet', 'bulk', 'bodyprofile', 'diabetes', 'fitness'].includes(userInfo.goal) ? 'customGoal' : userInfo?.goal }}
+            style={{ padding: '16px', background: '#fff', margin: '16px', borderRadius: '8px' }}
+            footer={
+              <Space direction='vertical' block style={{ '--gap': '12px' }}>
+                <Button block type='submit' color='primary' shape='rounded' style={{ '--background-color': '#5FDD9D', '--border-color': '#5FDD9D' }}>
+                   <Space align='center'><CheckCircleOutline /><span style={{ fontFamily: 'Pretendard-600' }}>저장</span></Space>
+                </Button>
+                <Button block onClick={() => setIsEditing(false)} shape='rounded' fill='outline'>
+                   <Space align='center'><CloseCircleOutline /><span style={{ fontFamily: 'Pretendard-600' }}>취소</span></Space>
+                </Button>
+              </Space>
+            }
           >
             <Form.Item
               name="height"
-              label="키 (cm)"
-              rules={[{ required: true }]}
+              label={<Text style={{ fontFamily: 'Pretendard-600' }}>키 (cm)</Text>}
+              rules={[{ required: true, message: '키를 입력해주세요' }]}
             >
-              <Input type="number" />
+              <Input type="number" placeholder="예) 175" />
             </Form.Item>
 
             <Form.Item
               name="gender"
-              label="성별"
-              rules={[{ required: true }]}
+              label={<Text style={{ fontFamily: 'Pretendard-600' }}>성별</Text>}
+              rules={[{ required: true, message: '성별을 선택해주세요' }]}
             >
-              <Radio.Group style={{width: '100%'}}>
-                <Radio value="male">남성</Radio>
-                <Radio style={{marginLeft: '20%'}} value="female">여성</Radio>
+              <Radio.Group>
+                <Radio value="male"><span style={{ fontFamily: 'Pretendard-500' }}>남성</span></Radio>
+                <Radio value="female" style={{ marginLeft: '16px' }}><span style={{ fontFamily: 'Pretendard-500' }}>여성</span></Radio>
               </Radio.Group>
             </Form.Item>
 
             <Form.Item
               name="age"
-              label="나이"
-              rules={[{ required: true }]}
+              label={<Text style={{ fontFamily: 'Pretendard-600' }}>나이</Text>}
+              rules={[{ required: true, message: '나이를 입력해주세요' }]}
             >
-              <Input type="number" />
+              <Input type="number" placeholder="예) 25" />
             </Form.Item>
 
             <Form.Item
               name="goal"
-              label="목표"
-              rules={[{ required: true }]}
+              label={<Text style={{ fontFamily: 'Pretendard-600' }}>목표</Text>}
+              rules={[{ required: true, message: '목표를 선택해주세요' }]}
             >
-              <Select style={{width: '100%'}}>
-                <Select.Option value="diet">다이어트</Select.Option>
-                <Select.Option value="bulk">벌크업</Select.Option>
-                <Select.Option value="bodyprofile">바디프로필</Select.Option>
-                <Select.Option value="diabetes">혈당관리</Select.Option>
-                <Select.Option value="fitness">체력증진</Select.Option>
-                <Select.Option value="customGoal">기타</Select.Option>
-              </Select>
+              <Select
+                placeholder="목표를 선택해주세요"
+                style={{ width: '100%' }}
+                onChange={(value) => form.setFieldValue('goal', value)}
+                options={[
+                  { value: 'diet', label: <span style={{ fontFamily: 'Pretendard-500' }}>다이어트</span> },
+                  { value: 'bulk', label: <span style={{ fontFamily: 'Pretendard-500' }}>벌크업</span> },
+                  { value: 'bodyprofile', label: <span style={{ fontFamily: 'Pretendard-500' }}>바디프로필</span> },
+                  { value: 'diabetes', label: <span style={{ fontFamily: 'Pretendard-500' }}>혈당관리</span> },
+                  { value: 'fitness', label: <span style={{ fontFamily: 'Pretendard-500' }}>체력증진</span> },
+                  { value: 'customGoal', label: <span style={{ fontFamily: 'Pretendard-500' }}>기타</span> }
+                ]}
+              />
             </Form.Item>
 
             {form.getFieldValue('goal') === 'customGoal' && (
               <Form.Item
                 name="customGoalText"
-                label="목표 직접 입력"
-                rules={[{ required: true }]}
+                label={<Text style={{ fontFamily: 'Pretendard-600' }}>목표 직접 입력</Text>}
+                rules={[{ required: true, message: '기타 목표를 입력해주세요' }]}
               >
-                <Input />
+                <Input placeholder="달성하고 싶은 목표를 입력하세요" />
               </Form.Item>
             )}
-
-            <Space>
-              <Button color='primary' onClick={() => form.submit()}>
-                저장
-              </Button>
-              <Button onClick={() => setIsEditing(false)}>
-                취소
-              </Button>
-            </Space>
           </Form>
         )}
       </div>
 
-      {/* 하단 영역 */}
+      {/* 하단 로그아웃 버튼 영역 */}
       <div
         style={{
-          width: '100%',
           padding: '16px',
           borderTop: '1px solid #eee',
+          background: '#f8f9fa'
         }}
       >
-        <Button onClick={onLogout} style={{ width: '100%' }} color='danger'>
-          로그아웃
+        <Button block onClick={onLogout} color='danger' fill='outline' shape='rounded'>
+          <Space align='center'><span style={{ fontFamily: 'Pretendard-600' }}>로그아웃</span></Space>
         </Button>
       </div>
     </Popup>
