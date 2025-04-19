@@ -50,7 +50,7 @@ const App = () => {
     }
   }, [deviceInfo]);
 
-  // 알림 권한 요청 함수
+  // 알림 권한 요청 함수 수정
   const requestNotificationPermission = async () => {
     const vapidKey = "BBOl7JOGCasgyKCZv1Atq_5MdnvWAWk_iWleIggXfXN3aMGJeuKdEHSTp4OGUfmVPNHwnf5eCLQyY80ITKzz7qk";
 
@@ -60,6 +60,7 @@ const App = () => {
     }
 
     try {
+      // 1. 알림 권한 요청
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
       console.log("Notification permission status:", permission);
@@ -69,17 +70,23 @@ const App = () => {
         setShowNotificationButton(false);
         
         try {
-            const currentToken = await getToken(messaging, { vapidKey: vapidKey });
+            // 2. 현재 활성화된 서비스 워커 등록 가져오기
+            console.log("Waiting for service worker registration...");
+            const registration = await navigator.serviceWorker.ready;
+            console.log("Service worker registration ready:", registration);
+
+            // 3. getToken 호출 시 serviceWorkerRegistration 옵션 추가
+            const currentToken = await getToken(messaging, { 
+              vapidKey: vapidKey, 
+              serviceWorkerRegistration: registration 
+            });
+
             if (currentToken) {
                 console.log("FCM Token:", currentToken);
-                
-                dispatch(setFcmToken(currentToken));
-                
-                // TODO: 얻어온 토큰을 Firestore나 백엔드 서버에 저장하는 로직 구현
-                // 예: storeTokenInFirestore(user.uid, currentToken);
+                dispatch(setFcmToken(currentToken)); 
+                // TODO: Firestore 등 서버에 토큰 저장 로직 구현
             } else {
                 console.log('No registration token available. Request permission to generate one.');
-                // 토큰이 없을 경우 스토어의 토큰도 비워주는 것이 좋을 수 있음 (선택적)
                 // dispatch(setFcmToken(null));
             }
         } catch (getTokenError) {
