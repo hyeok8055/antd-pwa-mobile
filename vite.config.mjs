@@ -17,6 +17,7 @@ export default defineConfig({
       filename: 'sw.js',
       manifestFilename: 'manifest.webmanifest',
       workbox: {
+        importScripts: ['src/firebase-messaging-sw-logic.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
           {

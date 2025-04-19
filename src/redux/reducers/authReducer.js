@@ -1,9 +1,10 @@
-import { SET_AUTH_STATUS, CLEAR_AUTH_STATUS } from '../actions/actionTypes';
+import { SET_AUTH_STATUS, CLEAR_AUTH_STATUS, SET_FCM_TOKEN } from '../actions/actionTypes';
 
 const initialState = {
   isAuthenticated: false,
   user: null,
   token: null,
+  fcmToken: null,
 };
 
 const authReducer = (state = initialState, action) => {
@@ -22,6 +23,12 @@ const authReducer = (state = initialState, action) => {
         ...state,
         isAuthenticated: false,
         user: null,
+        fcmToken: null,
+      };
+    case SET_FCM_TOKEN:
+      return {
+        ...state,
+        fcmToken: action.payload,
       };
     default:
       return state;

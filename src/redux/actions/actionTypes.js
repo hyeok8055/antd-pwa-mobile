@@ -4,4 +4,5 @@ export const SET_AUTH_STATUS = 'SET_AUTH_STATUS';
 export const CLEAR_AUTH_STATUS = 'CLEAR_AUTH_STATUS';
 export const SET_WEEKLY_DATA = 'SET_WEEKLY_DATA';
 export const CLEAR_WEEKLY_DATA = 'CLEAR_WEEKLY_DATA';
-export const SET_FOODS = 'SET_FOODS'; 
+export const SET_FOODS = 'SET_FOODS';
+export const SET_FCM_TOKEN = 'SET_FCM_TOKEN'; 
