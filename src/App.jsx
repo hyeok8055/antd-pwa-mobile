@@ -60,7 +60,7 @@ const App = () => {
     }
 
     try {
-      // 1. 알림 권한 요청
+      // 알림 권한 요청
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
       console.log("Notification permission status:", permission);
@@ -70,17 +70,9 @@ const App = () => {
         setShowNotificationButton(false);
         
         try {
-            // 2. 현재 활성화된 서비스 워커 등록 가져오기
-            console.log("Waiting for service worker registration...");
-            const registration = await navigator.serviceWorker.ready;
-            console.log("Service worker registration ready:", registration);
-
-            // 3. getToken 호출 시 serviceWorkerRegistration 옵션 추가
-            const currentToken = await getToken(messaging, { 
-              vapidKey: vapidKey, 
-              serviceWorkerRegistration: registration 
-            });
-
+            // getToken 호출 - firebase-messaging-sw.js를 기본적으로 사용
+            const currentToken = await getToken(messaging, { vapidKey: vapidKey });
+            
             if (currentToken) {
                 console.log("FCM Token:", currentToken);
                 dispatch(setFcmToken(currentToken)); 
