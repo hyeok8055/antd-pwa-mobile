@@ -26,6 +26,14 @@ const ADMIN_EMAILS = [
 // 기본 그룹 (그룹 삭제 시 할당될 그룹)
 const DEFAULT_GROUP_KEY = 'default';
 
+// 식사 유형 한글 변환 맵 (컴포넌트 최상위 스코프)
+const mealTypeKoreanMap = {
+    breakfast: '아침',
+    lunch: '점심',
+    dinner: '저녁',
+    snacks: '간식'
+};
+
 const CalorieAdminPage = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -430,13 +438,8 @@ const CalorieAdminPage = () => {
     });
     const averageSpecificBias = countWithSpecificData > 0 ? Math.round(totalSpecificDifference / countWithSpecificData) : 0;
 
-    // 식사 유형 한글 변환
-    const mealTypeKorean = {
-        breakfast: '아침',
-        lunch: '점심',
-        dinner: '저녁',
-        snacks: '간식'
-    }[selectedMealType] || selectedMealType;
+    // GroupCard 내부에서는 직접 맵 사용 또는 필요시 변수 선언
+    const mealTypeKoreanLabel = mealTypeKoreanMap[selectedMealType] || selectedMealType;
 
     const currentGroup = groups.find(g => g.key === group.key);
 
@@ -492,7 +495,7 @@ const CalorieAdminPage = () => {
               size="small"
               onClick={() => {
                 confirm({
-                  title: `${currentGroup?.name} ${selectedDate.format('YYYY-MM-DD')} ${mealTypeKorean} 편차 적용`,
+                  title: `${currentGroup?.name} ${selectedDate.format('YYYY-MM-DD')} ${mealTypeKoreanLabel} 편차 적용`,
                   icon: <ExclamationCircleOutlined />,
                   content: `${groupUsers.length}명 사용자에게 offset 적용?`,
                   onOk() { applyGroupCalorieBias(group.key); }
@@ -510,7 +513,7 @@ const CalorieAdminPage = () => {
             <Statistic title="사용자 수" value={groupUsers.length} suffix="명" />
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <Statistic title={`평균 편차 (${selectedDate.format('MM/DD')} ${mealTypeKorean})`} value={averageSpecificBias} suffix={`kcal (${countWithSpecificData}명)`} />
+            <Statistic title={`평균 편차 (${selectedDate.format('MM/DD')} ${mealTypeKoreanLabel})`} value={averageSpecificBias} suffix={`kcal (${countWithSpecificData}명)`} />
           </Col>
           <Col xs={24} sm={24} md={8}>
             <Space wrap>
@@ -593,7 +596,7 @@ const CalorieAdminPage = () => {
       sorter: (a, b) => a.calorieBias - b.calorieBias,
     },
     {
-      title: `${selectedDate.format('MM/DD')} ${mealTypeKorean} 정보`,
+      title: `${selectedDate.format('MM/DD')} ${mealTypeKoreanMap[selectedMealType] || selectedMealType} 정보`,
       key: 'selectedMeal',
       width: 180,
       render: (_, record) => {
@@ -631,7 +634,7 @@ const CalorieAdminPage = () => {
               confirm({
                 title: '개별 편차 적용',
                 icon: <ExclamationCircleOutlined />,
-                content: `${record.name} (${selectedDate.format('YYYY-MM-DD')} ${mealTypeKorean}) offset(${record.calorieBias}) 적용?`,
+                content: `${record.name} (${selectedDate.format('YYYY-MM-DD')} ${mealTypeKoreanMap[selectedMealType] || selectedMealType}) offset(${record.calorieBias}) 적용?`,
                 onOk() { applyCalorieBias(record.key); }
               });
             }}
@@ -674,7 +677,7 @@ const CalorieAdminPage = () => {
               </div>
               {record.foodDocForSelectedDate && (
                 <div style={{ marginTop: 8, fontSize: '12px', borderTop: '1px dashed #eee', paddingTop: 8 }}>
-                    <Text type="secondary">최근 식사 ({selectedDate.format('MM/DD')} {selectedMealType}): </Text>
+                    <Text type="secondary">최근 식사 ({selectedDate.format('MM/DD')} {mealTypeKoreanMap[selectedMealType]}): </Text>
                     {(() => {
                        const mealData = record.foodDocForSelectedDate[selectedMealType];
                        if (mealData && mealData.actualCalories !== null && mealData.estimatedCalories !== null) {
@@ -712,7 +715,7 @@ const CalorieAdminPage = () => {
               confirm({
                 title: '개별 편차 적용',
                 icon: <ExclamationCircleOutlined />,
-                content: `${record.name} (${selectedDate.format('YYYY-MM-DD')} ${mealTypeKorean}) offset(${record.calorieBias}) 적용?`,
+                content: `${record.name} (${selectedDate.format('YYYY-MM-DD')} ${mealTypeKoreanMap[selectedMealType] || selectedMealType}) offset(${record.calorieBias}) 적용?`,
                 onOk() { applyCalorieBias(record.key); }
               });
             }}
@@ -839,10 +842,10 @@ const CalorieAdminPage = () => {
               style={{ width: '100%' }} 
               size={isMobile ? 'small' : 'middle'}
             >
-              <Option value="breakfast"><CoffeeOutlined /> 아침</Option>
-              <Option value="lunch"><UserOutlined /> 점심</Option> {/* 아이콘 변경 가능 */} 
-              <Option value="dinner"><TeamOutlined /> 저녁</Option> {/* 아이콘 변경 가능 */} 
-              <Option value="snacks"><CalendarOutlined /> 간식</Option> {/* 아이콘 변경 가능 */} 
+              <Option value="breakfast"><CoffeeOutlined /> {mealTypeKoreanMap['breakfast']}</Option>
+              <Option value="lunch"><UserOutlined /> {mealTypeKoreanMap['lunch']}</Option>
+              <Option value="dinner"><TeamOutlined /> {mealTypeKoreanMap['dinner']}</Option>
+              <Option value="snacks"><CalendarOutlined /> {mealTypeKoreanMap['snacks']}</Option>
             </Select>
         </Col>
         <Col xs={24} sm={8} md={12}>
