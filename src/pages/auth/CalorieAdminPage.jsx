@@ -530,6 +530,14 @@ const CalorieAdminPage = () => {
         style={{ marginBottom: 16 }}
       >
         <Row gutter={[16, 16]}>
+          <Col xs={24}>
+            <Text strong style={{ fontSize: '18px', display: 'block', marginBottom: '8px' }}>
+              {group.name}
+            </Text>
+            <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '16px' }}>
+              {group.description || '설명 없음'}
+            </Text>
+          </Col>
           <Col xs={24} sm={12} md={8}>
             <Statistic title="사용자 수" value={groupUsers.length} suffix="명" />
           </Col>
