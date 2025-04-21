@@ -91,7 +91,7 @@ const CalorieAdminPage = () => {
           const defaultGroupData = {
               name: '기본 그룹',
               color: '#8c8c8c',
-              description: '그룹이 지정되지 않은 사용자 또는 삭제된 그룹의 사용자',
+              description: '그룹 미지정',
               isDefault: true
           };
           try {
@@ -464,25 +464,23 @@ const CalorieAdminPage = () => {
     // GroupCard 내부에서는 직접 맵 사용 또는 필요시 변수 선언
     const mealTypeKoreanLabel = mealTypeKoreanMap[selectedMealType] || selectedMealType;
 
-    const currentGroup = groups.find(g => g.name === group.name);
-
     return (
       <Card
         title={
           <Space wrap>
-            <Tag color={currentGroup?.color || 'default'}>{currentGroup?.name || '이름 없음'}</Tag>
-            <Text style={{ fontSize: '14px' }}>{currentGroup?.description || '설명 없음'}</Text>
-            {currentGroup?.isDefault && <Tag>기본</Tag>}
+            <Tag color={group.color || 'default'}>{group.name || '이름 없음'}</Tag>
+            <Text style={{ fontSize: '14px' }}>{group.description || '설명 없음'}</Text>
+            {group.isDefault && <Tag>기본</Tag>}
           </Space>
         }
         extra={
           <Space wrap size={isMobile ? 'small' : 'middle'}>
-             {!currentGroup?.isDefault && (
+             {!group.isDefault && (
                  <>
                      <Button
                          icon={<EditOutlined />}
                          size="small"
-                         onClick={() => handleOpenGroupEditModal(currentGroup)}
+                         onClick={() => handleOpenGroupEditModal(group)}
                      >
                          정보 수정
                      </Button>
@@ -490,14 +488,14 @@ const CalorieAdminPage = () => {
                          danger
                          icon={<DeleteOutlined />}
                          size="small"
-                         onClick={() => handleDeleteGroup(currentGroup)}
+                         onClick={() => handleDeleteGroup(group)}
                      >
                          그룹 삭제
                      </Button>
                      <Button
                          icon={<UserAddOutlined />}
                          size="small"
-                         onClick={() => handleOpenAddUserModal(currentGroup)}
+                         onClick={() => handleOpenAddUserModal(group)}
                      >
                          사용자 추가
                      </Button>
@@ -518,7 +516,7 @@ const CalorieAdminPage = () => {
               size="small"
               onClick={() => {
                 confirm({
-                  title: `${currentGroup?.name} ${selectedDate.format('YYYY-MM-DD')} ${mealTypeKoreanLabel} 편차 적용`,
+                  title: `${group.name} ${selectedDate.format('YYYY-MM-DD')} ${mealTypeKoreanLabel} 편차 적용`,
                   icon: <ExclamationCircleOutlined />,
                   content: `${groupUsers.length}명 사용자에게 offset 적용?`,
                   onOk() { applyGroupCalorieBias(group.name); }
@@ -542,7 +540,7 @@ const CalorieAdminPage = () => {
             <Space wrap>
               {groupUsers.slice(0, isMobile ? 3 : 5).map(user => (
                 <Tooltip key={user.key} title={`${user.name} (${user.email}) - 설정값: ${user.calorieBias > 0 ? '+' : ''}${user.calorieBias}kcal`}>
-                  <Tag color={currentGroup?.color || 'default'}>
+                  <Tag color={group.color || 'default'}>
                     {user.name || user.email.split('@')[0]} ({user.calorieBias > 0 ? '+' : ''}{user.calorieBias})
                   </Tag>
                  </Tooltip>
@@ -905,18 +903,19 @@ const CalorieAdminPage = () => {
               <Skeleton active paragraph={{ rows: 2 }} />
               <Skeleton active paragraph={{ rows: 2 }} />
             </Space>
-          ) : groups.length > 1 ? (
+          ) : groups.length > 0 ? (
              groups.sort((a, b) => {
                  if (a.id === DEFAULT_GROUP_ID) return -1;
                  if (b.id === DEFAULT_GROUP_ID) return 1;
-                 return a.name.localeCompare(b.name);
+                 if (a.isDefault && !b.isDefault) return -1;
+                 if (!a.isDefault && b.isDefault) return 1;
+                 return (a.name || '').localeCompare(b.name || '');
              }).map(group => (<GroupCard key={group.id} group={group} />))
           ) : (
             <Empty description="생성된 사용자 그룹이 없습니다." style={{ marginTop: 32, marginBottom: 32 }} >
               <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenGroupEditModal()}>새 그룹 생성</Button>
             </Empty>
           )}
-          {!loadingGroups && groups.find(g => g.id === DEFAULT_GROUP_ID) && <GroupCard key={DEFAULT_GROUP_ID} group={groups.find(g => g.id === DEFAULT_GROUP_ID)} />}
         </TabPane>
 
         <TabPane tab={<span><UserOutlined /> 개별 사용자</span>} key="users">
