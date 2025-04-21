@@ -24,7 +24,8 @@ const ADMIN_EMAILS = [
 ];
 
 // 기본 그룹 (그룹 삭제 시 할당될 그룹)
-const DEFAULT_GROUP_KEY = 'default';
+const DEFAULT_GROUP_ID = 'default';
+const DEFAULT_GROUP_VALUE = 0; // 사용자 문서의 'group' 필드에서 기본 그룹을 나타내는 값
 
 // 식사 유형 한글 변환 맵 (컴포넌트 최상위 스코프)
 const mealTypeKoreanMap = {
@@ -80,25 +81,23 @@ const CalorieAdminPage = () => {
       const groupsSnapshot = await getDocs(groupsCollection);
       const groupsData = groupsSnapshot.docs.map(doc => ({
         id: doc.id,
-        key: doc.data().key || doc.id,
+        key: doc.data().name || doc.id,
         ...doc.data()
       }));
       
       // 기본 그룹이 없는 경우 생성 또는 확인
-      let defaultGroupExists = groupsData.some(g => g.key === DEFAULT_GROUP_KEY);
+      let defaultGroupExists = groupsData.some(g => g.id === DEFAULT_GROUP_ID);
       if (!defaultGroupExists) {
           const defaultGroupData = {
-              key: DEFAULT_GROUP_KEY,
               name: '기본 그룹',
               color: '#8c8c8c',
               description: '그룹이 지정되지 않은 사용자 또는 삭제된 그룹의 사용자',
               isDefault: true
           };
           try {
-              const defaultGroupRef = doc(db, 'calorieGroups', DEFAULT_GROUP_KEY);
+              const defaultGroupRef = doc(db, 'calorieGroups', DEFAULT_GROUP_ID);
               await setDoc(defaultGroupRef, defaultGroupData, { merge: true });
-              groupsData.push({ ...defaultGroupData, id: DEFAULT_GROUP_KEY });
-              // message.info('기본 그룹이 생성되었습니다.'); // 초기 로딩 시 불필요 메시지 제거
+              groupsData.push({ ...defaultGroupData, id: DEFAULT_GROUP_ID, key: '기본 그룹' });
           } catch(error) {
               console.error("기본 그룹 확인/생성 실패:", error);
           }
@@ -125,16 +124,19 @@ const CalorieAdminPage = () => {
 
       const usersDataPromises = usersSnapshot.docs.map(async (userDoc) => {
         const userData = userDoc.data();
-        let userGroupKey = userData.experimentGroup || DEFAULT_GROUP_KEY;
-        const groupExists = loadedGroups.some(g => g.key === userGroupKey);
-        if (!groupExists) {
-            userGroupKey = DEFAULT_GROUP_KEY;
+        let userGroupValue = userData.group === undefined ? DEFAULT_GROUP_VALUE : userData.group;
+
+        const isValidGroup = userGroupValue === DEFAULT_GROUP_VALUE || loadedGroups.some(g => g.name === userGroupValue && !g.isDefault);
+
+        if (!isValidGroup) {
+            userGroupValue = DEFAULT_GROUP_VALUE;
             try {
-              await updateDoc(doc(db, 'users', userDoc.id), { experimentGroup: DEFAULT_GROUP_KEY });
+              await updateDoc(doc(db, 'users', userDoc.id), { group: DEFAULT_GROUP_VALUE });
             } catch (updateError) {
-              console.error(`사용자 ${userDoc.id}의 그룹 업데이트 실패:`, updateError);
+              console.error(`사용자 ${userDoc.id} 그룹 기본값 업데이트 실패:`, updateError);
             }
         }
+
         const calorieBias = userData.calorieBias !== undefined ? userData.calorieBias : 0;
 
         // 선택된 날짜의 food 문서 가져오기
@@ -158,9 +160,9 @@ const CalorieAdminPage = () => {
           height: userData.height || '-',
           weight: userData.weight || '-',
           goal: userData.goal || '-',
-          group: userGroupKey,
-          calorieBias: calorieBias, // 사용자 설정 편차값
-          foodDocForSelectedDate: foodDocForSelectedDate, // 선택된 날짜의 문서 데이터
+          group: userGroupValue,
+          calorieBias: calorieBias,
+          foodDocForSelectedDate: foodDocForSelectedDate,
         };
       });
 
@@ -210,12 +212,12 @@ const CalorieAdminPage = () => {
   };
 
   // 그룹별 필터링
-  const filterByGroup = (groupKey) => {
-    setSelectedGroupKey(groupKey);
-    if (groupKey === 'all') {
+  const filterByGroup = (groupValue) => {
+    setSelectedGroupKey(groupValue);
+    if (groupValue === 'all') {
       setFilteredUsers(users);
     } else {
-      const filtered = users.filter(user => user.group === groupKey);
+      const filtered = users.filter(user => user.group === groupValue);
       setFilteredUsers(filtered);
     }
   };
@@ -265,7 +267,7 @@ const CalorieAdminPage = () => {
 
   // 그룹 삭제 처리
   const handleDeleteGroup = (group) => {
-      if (group.isDefault || group.key === DEFAULT_GROUP_KEY) {
+      if (group.isDefault || group.id === DEFAULT_GROUP_ID) {
           message.warn('기본 그룹은 삭제할 수 없습니다.');
           return;
       }
@@ -273,20 +275,20 @@ const CalorieAdminPage = () => {
       confirm({
           title: `${group.name} 그룹 삭제`,
           icon: <ExclamationCircleOutlined />,
-          content: `정말로 '${group.name}' 그룹을 삭제하시겠습니까? 이 그룹에 속한 사용자들은 '${groups.find(g => g.key === DEFAULT_GROUP_KEY)?.name || '기본'}' 그룹으로 이동됩니다.`,
+          content: `정말로 '${group.name}' 그룹을 삭제하시겠습니까? 소속된 사용자들은 '기본 그룹'으로 이동됩니다.`,
           okText: '삭제',
           okType: 'danger',
           cancelText: '취소',
           onOk: async () => {
               try {
                   setLoadingGroups(true);
-                  const usersInGroupQuery = query(collection(db, 'users'), where('experimentGroup', '==', group.key));
+                  const usersInGroupQuery = query(collection(db, 'users'), where('group', '==', group.name));
                   const usersSnapshot = await getDocs(usersInGroupQuery);
 
                   const batch = writeBatch(db);
                   usersSnapshot.forEach(userDoc => {
                       const userRef = doc(db, 'users', userDoc.id);
-                      batch.update(userRef, { experimentGroup: DEFAULT_GROUP_KEY });
+                      batch.update(userRef, { group: DEFAULT_GROUP_VALUE });
                   });
                   await batch.commit();
 
@@ -318,7 +320,7 @@ const CalorieAdminPage = () => {
     try {
       const userRef = doc(db, 'users', currentUser.key);
       await updateDoc(userRef, {
-        experimentGroup: values.group,
+        group: values.group,
         calorieBias: values.calorieBias
       });
 
@@ -333,13 +335,13 @@ const CalorieAdminPage = () => {
   };
 
   // 그룹 설정 모달
-  const handleOpenGroupSettingsModal = (groupKey) => {
-    const group = groups.find(g => g.key === groupKey);
+  const handleOpenGroupSettingsModal = (groupKeyOrId) => {
+    const group = groups.find(g => g.id === groupKeyOrId || g.name === groupKeyOrId);
     if (!group) return;
     
-    setSelectedGroupKey(groupKey);
+    setSelectedGroupKey(group.name);
     
-    const groupUser = users.find(u => u.group === groupKey);
+    const groupUser = users.find(u => u.group === group.name);
     const defaultCalorieBias = groupUser ? groupUser.calorieBias : 0;
     
     groupSettingsForm.setFieldsValue({
@@ -362,7 +364,7 @@ const CalorieAdminPage = () => {
       }
       await batch.commit();
       
-      message.success(`${groups.find(g => g.key === selectedGroupKey)?.name || selectedGroupKey} 그룹의 칼로리 편차가 업데이트되었습니다.`);
+      message.success(`${groups.find(g => g.name === selectedGroupKey)?.name || selectedGroupKey} 그룹의 칼로리 편차가 업데이트되었습니다.`);
       setIsGroupSettingsModalVisible(false);
       await loadData();
     } catch (error) {
@@ -382,12 +384,23 @@ const CalorieAdminPage = () => {
   const getTransferDataSource = () => {
     if (!targetGroupForAddingUser) return [];
     return users
-      .filter(user => user.group !== targetGroupForAddingUser.key)
-      .map(user => ({
-        key: user.key, 
-        title: `${user.name} (${user.email})`, 
-        description: `현재 그룹: ${groups.find(g => g.key === user.group)?.name || user.group}`
-      }));
+      .filter(user => {
+           if (targetGroupForAddingUser.isDefault) {
+               return user.group !== DEFAULT_GROUP_VALUE;
+           } else {
+               return user.group !== targetGroupForAddingUser.name;
+           }
+      })
+      .map(user => {
+          const currentGroupName = user.group === DEFAULT_GROUP_VALUE
+              ? '기본 그룹'
+              : (groups.find(g => g.name === user.group)?.name || user.group);
+          return {
+              key: user.key,
+              title: `${user.name} (${user.email})`,
+              description: `현재 그룹: ${currentGroupName}`
+          };
+      });
   };
 
   // Transfer 선택 변경 핸들러
@@ -401,12 +414,16 @@ const CalorieAdminPage = () => {
         message.warning('추가할 사용자를 선택하세요.');
         return;
     }
+    const targetGroupValue = targetGroupForAddingUser.isDefault
+        ? DEFAULT_GROUP_VALUE
+        : targetGroupForAddingUser.name;
+
     try {
-        setLoadingGroups(true);
+        setLoadingUsers(true);
         const batch = writeBatch(db);
         targetKeysForTransfer.forEach(userKey => {
             const userRef = doc(db, 'users', userKey);
-            batch.update(userRef, { experimentGroup: targetGroupForAddingUser.key });
+            batch.update(userRef, { group: targetGroupValue });
         });
         await batch.commit();
         message.success(`${targetKeysForTransfer.length}명의 사용자가 '${targetGroupForAddingUser.name}' 그룹에 추가되었습니다.`);
@@ -417,13 +434,19 @@ const CalorieAdminPage = () => {
         console.error('그룹에 사용자 추가 실패:', error);
         message.error('그룹에 사용자를 추가하는 중 오류가 발생했습니다.');
     } finally {
-        setLoadingGroups(false);
+        setLoadingUsers(false);
     }
   };
 
   // 그룹 정보를 표시하는 카드 컴포넌트
   const GroupCard = ({ group }) => {
-    const groupUsers = users.filter(user => user.group === group.key);
+    const groupUsers = users.filter(user => {
+        if (group.isDefault) {
+            return user.group === DEFAULT_GROUP_VALUE;
+        } else {
+            return user.group === group.name;
+        }
+    });
     
     // 선택된 날짜/식사 유형의 평균 편차 계산
     let totalSpecificDifference = 0;
@@ -441,7 +464,7 @@ const CalorieAdminPage = () => {
     // GroupCard 내부에서는 직접 맵 사용 또는 필요시 변수 선언
     const mealTypeKoreanLabel = mealTypeKoreanMap[selectedMealType] || selectedMealType;
 
-    const currentGroup = groups.find(g => g.key === group.key);
+    const currentGroup = groups.find(g => g.name === group.name);
 
     return (
       <Card
@@ -485,7 +508,7 @@ const CalorieAdminPage = () => {
               type="primary"
               icon={<EditOutlined />}
               size="small"
-              onClick={() => handleOpenGroupSettingsModal(group.key)}
+              onClick={() => handleOpenGroupSettingsModal(group.name)}
             >
               편차 설정
             </Button>
@@ -498,7 +521,7 @@ const CalorieAdminPage = () => {
                   title: `${currentGroup?.name} ${selectedDate.format('YYYY-MM-DD')} ${mealTypeKoreanLabel} 편차 적용`,
                   icon: <ExclamationCircleOutlined />,
                   content: `${groupUsers.length}명 사용자에게 offset 적용?`,
-                  onOk() { applyGroupCalorieBias(group.key); }
+                  onOk() { applyGroupCalorieBias(group.name); }
                 });
               }}
             >
@@ -572,15 +595,19 @@ const CalorieAdminPage = () => {
       dataIndex: 'group',
       key: 'group',
       width: 120,
-      render: (groupKey) => {
-        const group = groups.find(g => g.key === groupKey);
-        return (
-          <Tag color={group?.color || 'default'}>
-            {group?.name || groupKey}
-          </Tag>
-        );
+      render: (groupValue) => {
+        if (groupValue === DEFAULT_GROUP_VALUE) {
+          const defaultGroup = groups.find(g => g.id === DEFAULT_GROUP_ID);
+          return <Tag color={defaultGroup?.color || '#8c8c8c'}>{defaultGroup?.name || '기본 그룹'}</Tag>;
+        } else {
+          const group = groups.find(g => g.name === groupValue);
+          return <Tag color={group?.color || 'default'}>{group?.name || groupValue}</Tag>;
+        }
       },
-      filters: groups.map(g => ({ text: g.name, value: g.key })),
+      filters: [
+          { text: '기본 그룹', value: DEFAULT_GROUP_VALUE },
+          ...groups.filter(g => !g.isDefault).map(g => ({ text: g.name, value: g.name }))
+      ],
       onFilter: (value, record) => record.group === value,
     },
     {
@@ -651,52 +678,60 @@ const CalorieAdminPage = () => {
     {
       title: '사용자',
       key: 'user',
-      render: (_, record) => {
-        const group = groups.find(g => g.key === record.group);
-        return (
-            <div>
-              <Space align="center">
-                <UserOutlined />
-                <Text strong>{record.name}</Text>
-              </Space>
-              <div style={{ marginTop: 4 }}>
-                <Text type="secondary" style={{ fontSize: '12px' }}>{record.email}</Text>
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <Tag color={group?.color || 'default'}>
-                  {group?.name || record.group}
-                </Tag>
-                <Tooltip title="칼로리 편차 설정값">
-                  <Text style={{
-                    color: record.calorieBias > 0 ? '#ff4d4f' : record.calorieBias < 0 ? '#1677ff' : 'inherit',
-                    marginLeft: 8
-                  }}>
-                    ({record.calorieBias > 0 ? '+' : ''}{record.calorieBias} kcal)
-                  </Text>
+      render: (_, r) => {
+          let groupName = '정보 없음';
+          let groupColor = 'default';
+          if (r.group === DEFAULT_GROUP_VALUE) {
+              const defaultGroup = groups.find(g => g.id === DEFAULT_GROUP_ID);
+              groupName = defaultGroup?.name || '기본 그룹';
+              groupColor = defaultGroup?.color || '#8c8c8c';
+          } else {
+              const group = groups.find(g => g.name === r.group);
+              groupName = group?.name || r.group;
+              groupColor = group?.color || 'default';
+          }
+          return (
+             <div>
+               <Space align="center">
+                 <UserOutlined />
+                 <Text strong>{r.name}</Text>
+               </Space>
+               <div style={{ marginTop: 4 }}>
+                 <Text type="secondary" style={{ fontSize: '12px' }}>{r.email}</Text>
+               </div>
+               <div style={{ marginTop: 8 }}>
+                 <Tag color={groupColor}>{groupName}</Tag>
+                 <Tooltip title="칼로리 편차 설정값">
+                   <Text style={{
+                     color: r.calorieBias > 0 ? '#ff4d4f' : r.calorieBias < 0 ? '#1677ff' : 'inherit',
+                     marginLeft: 8
+                   }}>
+                     ({r.calorieBias > 0 ? '+' : ''}{r.calorieBias} kcal)
+                   </Text>
                  </Tooltip>
-              </div>
-              {record.foodDocForSelectedDate && (
-                <div style={{ marginTop: 8, fontSize: '12px', borderTop: '1px dashed #eee', paddingTop: 8 }}>
-                    <Text type="secondary">최근 식사 ({selectedDate.format('MM/DD')} {mealTypeKoreanMap[selectedMealType]}): </Text>
-                    {(() => {
-                       const mealData = record.foodDocForSelectedDate[selectedMealType];
-                       if (mealData && mealData.actualCalories !== null && mealData.estimatedCalories !== null) {
-                           const originalDifference = mealData.actualCalories - mealData.estimatedCalories;
-                           const offset = mealData.offset;
-                           const finalDifference = originalDifference + (offset ?? 0);
-                           return (
-                                <Tooltip title={`실제: ${mealData.actualCalories}, 예상: ${mealData.estimatedCalories}, 편차(offset): ${offset ?? 0}`}>
-                                    <Text style={{ color: finalDifference > 0 ? '#ff4d4f' : finalDifference < 0 ? '#1677ff' : 'inherit' }}>
-                                         {finalDifference > 0 ? '+' : ''}{finalDifference} kcal
-                                    </Text>
-                                </Tooltip>
-                           );
-                       }
-                       return <Text type="secondary">기록 없음</Text>;
-                    })()}
-                </div>
-              )}
-            </div>
+               </div>
+               {r.foodDocForSelectedDate && (
+                 <div style={{ marginTop: 8, fontSize: '12px', borderTop: '1px dashed #eee', paddingTop: 8 }}>
+                     <Text type="secondary">최근 식사 ({selectedDate.format('MM/DD')} {mealTypeKoreanMap[selectedMealType]}): </Text>
+                     {(() => {
+                        const mealData = r.foodDocForSelectedDate[selectedMealType];
+                        if (mealData && mealData.actualCalories !== null && mealData.estimatedCalories !== null) {
+                            const originalDifference = mealData.actualCalories - mealData.estimatedCalories;
+                            const offset = mealData.offset;
+                            const finalDifference = originalDifference + (offset ?? 0);
+                            return (
+                                 <Tooltip title={`실제: ${mealData.actualCalories}, 예상: ${mealData.estimatedCalories}, 편차(offset): ${offset ?? 0}`}>
+                                     <Text style={{ color: finalDifference > 0 ? '#ff4d4f' : finalDifference < 0 ? '#1677ff' : 'inherit' }}>
+                                          {finalDifference > 0 ? '+' : ''}{finalDifference} kcal
+                                     </Text>
+                                 </Tooltip>
+                            );
+                        }
+                        return <Text type="secondary">기록 없음</Text>;
+                     })()}
+                 </div>
+               )}
+             </div>
         );
       },
     },
@@ -763,14 +798,14 @@ const CalorieAdminPage = () => {
     }
   };
 
-  const applyGroupCalorieBias = async (groupKey) => {
+  const applyGroupCalorieBias = async (groupKeyOrId) => {
      if (!selectedDate || !selectedMealType) {
         message.error('편차를 적용할 날짜와 식사 유형을 선택하세요.');
         return;
     }
     try {
       setLoadingUsers(true);
-      const groupUsers = users.filter(user => user.group === groupKey);
+      const groupUsers = users.filter(user => user.group === groupKeyOrId);
       if (groupUsers.length === 0) { message.info('그룹 사용자 없음'); setLoadingUsers(false); return; }
       
       const dateString = selectedDate.format('YYYY-MM-DD');
@@ -802,11 +837,11 @@ const CalorieAdminPage = () => {
 
       if (updatedUserCount > 0) {
           await batch.commit(); // Batch 실행
-          const groupName = groups.find(g => g.key === groupKey)?.name || groupKey;
+          const groupName = groups.find(g => g.name === groupKeyOrId)?.name || groupKeyOrId;
           message.success(`${groupName} 그룹 ${updatedUserCount}명 사용자의 ${dateString} ${selectedMealType} 편차(offset) 적용 완료`);
           await loadData(); // 데이터 리로드
       } else {
-          message.info(`${groups.find(g => g.key === groupKey)?.name || groupKey} 그룹 사용자 중 ${dateString} 날짜의 식사 기록이 있는 사람이 없습니다.`);
+          message.info(`${groups.find(g => g.name === groupKeyOrId)?.name || groupKeyOrId} 그룹 사용자 중 ${dateString} 날짜의 식사 기록이 있는 사람이 없습니다.`);
       }
 
     } catch (error) {
@@ -871,13 +906,17 @@ const CalorieAdminPage = () => {
               <Skeleton active paragraph={{ rows: 2 }} />
             </Space>
           ) : groups.length > 1 ? (
-             groups.filter(g => !g.isDefault).sort((a, b) => a.name.localeCompare(b.name)).map(group => (<GroupCard key={group.key} group={group} />))
+             groups.sort((a, b) => {
+                 if (a.id === DEFAULT_GROUP_ID) return -1;
+                 if (b.id === DEFAULT_GROUP_ID) return 1;
+                 return a.name.localeCompare(b.name);
+             }).map(group => (<GroupCard key={group.id} group={group} />))
           ) : (
             <Empty description="생성된 사용자 그룹이 없습니다." style={{ marginTop: 32, marginBottom: 32 }} >
               <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenGroupEditModal()}>새 그룹 생성</Button>
             </Empty>
           )}
-          {!loadingGroups && groups.find(g => g.isDefault) && <GroupCard key={DEFAULT_GROUP_KEY} group={groups.find(g => g.isDefault)} />}
+          {!loadingGroups && groups.find(g => g.id === DEFAULT_GROUP_ID) && <GroupCard key={DEFAULT_GROUP_ID} group={groups.find(g => g.id === DEFAULT_GROUP_ID)} />}
         </TabPane>
 
         <TabPane tab={<span><UserOutlined /> 개별 사용자</span>} key="users">
@@ -888,8 +927,13 @@ const CalorieAdminPage = () => {
             <Col xs={24} md={12}>
               <Select style={{ width: '100%' }} placeholder="그룹 필터" onChange={filterByGroup} value={selectedGroupKey || 'all'} allowClear onClear={() => filterByGroup('all')} size={isMobile ? 'small' : 'middle'}>
                 <Option value="all">모든 그룹</Option>
-                {groups.sort((a, b) => a.isDefault ? -1 : b.isDefault ? 1 : a.name.localeCompare(b.name)).map(group => (
-                    <Option key={group.key} value={group.key}><Tag color={group.color} style={{ marginRight: 3 }} /> {group.name}</Option>
+                <Option value={DEFAULT_GROUP_VALUE}>
+                   <Tag color={groups.find(g => g.id === DEFAULT_GROUP_ID)?.color || '#8c8c8c'} style={{ marginRight: 3 }} /> 기본 그룹
+                </Option>
+                {groups.filter(g => !g.isDefault).sort((a, b) => a.name.localeCompare(b.name)).map(group => (
+                    <Option key={group.id} value={group.name}>
+                        <Tag color={group.color} style={{ marginRight: 3 }} /> {group.name}
+                    </Option>
                  ))}
               </Select>
             </Col>
@@ -908,15 +952,54 @@ const CalorieAdminPage = () => {
       </Tabs>
 
       <Modal title={<Text style={{ fontSize: '16px', fontWeight: '600' }}>사용자 설정</Text>} open={isUserModalVisible} onCancel={() => setIsUserModalVisible(false)} footer={null} width={isMobile ? '90%' : 480} destroyOnClose>
-        {currentUser && ( <Form form={form} onFinish={handleSaveUserSettings} layout="vertical" initialValues={{ group: currentUser.group, calorieBias: currentUser.calorieBias }}> ... (내용 유지) ... </Form> )}
+        {currentUser && ( <Form form={form} onFinish={handleSaveUserSettings} layout="vertical" initialValues={{ group: currentUser.group, calorieBias: currentUser.calorieBias }}>
+          <Form.Item name="group" label="사용자 그룹" rules={[{ required: true, message: '그룹을 선택하세요.' }]}>
+            <Select style={{ width: '100%' }}>
+               <Option value={DEFAULT_GROUP_VALUE}>
+                  <Tag color={groups.find(g => g.id === DEFAULT_GROUP_ID)?.color || '#8c8c8c'} style={{ marginRight: 5 }} /> 기본 그룹
+               </Option>
+               {groups.filter(g => !g.isDefault).sort((a,b)=>a.name.localeCompare(b.name)).map(group => (
+                  <Option key={group.id} value={group.name}>
+                      <Tag color={group.color} style={{ marginRight: 5 }} /> {group.name}
+                  </Option>
+                ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="calorieBias" label="칼로리 편차" rules={[{ required: true, message: '칼로리 편차를 입력하세요.' }]}>
+            <InputNumber style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">저장</Button>
+          </Form.Item>
+        </Form> )}
       </Modal>
 
       <Modal title={<Text style={{ fontSize: '16px', fontWeight: '600' }}>그룹 편차 일괄 설정</Text>} open={isGroupSettingsModalVisible} onCancel={() => setIsGroupSettingsModalVisible(false)} footer={null} width={isMobile ? '90%' : 480} destroyOnClose>
-         {selectedGroupKey && ( <Form form={groupSettingsForm} onFinish={handleSaveGroupSettings} layout="vertical"> ... (내용 유지) ... </Form> )}
+         {selectedGroupKey && ( <Form form={groupSettingsForm} onFinish={handleSaveGroupSettings} layout="vertical">
+          <Form.Item name="calorieBias" label="칼로리 편차" rules={[{ required: true, message: '칼로리 편차를 입력하세요.' }]}>
+            <InputNumber style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">저장</Button>
+          </Form.Item>
+        </Form> )}
       </Modal>
       
        <Modal title={<Text style={{ fontSize: '16px', fontWeight: '600' }}>{editingGroup ? '그룹 정보 수정' : '새 그룹 생성'}</Text>} open={isGroupEditModalVisible} onCancel={() => { setIsGroupEditModalVisible(false); setEditingGroup(null); }} footer={null} width={isMobile ? '90%' : 480} destroyOnClose>
-           <Form form={groupEditForm} layout="vertical" onFinish={handleSaveGroup} initialValues={editingGroup ? { ...editingGroup, color: editingGroup.color || '#1677ff' } : { name: '', description: '', color: '#1677ff' }}> ... (내용 유지) ... </Form>
+           <Form form={groupEditForm} layout="vertical" onFinish={handleSaveGroup} initialValues={editingGroup ? { ...editingGroup, color: editingGroup.color || '#1677ff' } : { name: '', description: '', color: '#1677ff' }}>
+               <Form.Item name="name" label="그룹 이름" rules={[{ required: true, message: '그룹 이름을 입력하세요.' }]}>
+                   <Input />
+               </Form.Item>
+               <Form.Item name="description" label="그룹 설명">
+                   <Input.TextArea />
+               </Form.Item>
+               <Form.Item name="color" label="그룹 색상" rules={[{ required: true, message: '그룹 색상을 선택하세요.' }]}>
+                   <ColorPicker />
+               </Form.Item>
+               <Form.Item>
+                   <Button type="primary" htmlType="submit">저장</Button>
+               </Form.Item>
+           </Form>
        </Modal>
 
        <Modal title={<Text style={{ fontSize: '16px', fontWeight: '600' }}>'{targetGroupForAddingUser?.name}' 그룹 사용자 추가</Text>} open={isAddUserModalVisible} onCancel={() => setIsAddUserModalVisible(false)} onOk={handleAddUsersToGroup} okText="추가" cancelText="취소" width={isMobile ? '95%' : 680} destroyOnClose bodyStyle={{ height: isMobile ? '50vh' : 350, overflowY: 'auto' }}>
