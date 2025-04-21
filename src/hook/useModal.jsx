@@ -98,10 +98,32 @@ export const useModal = (foodData, testMode = false) => {
     if (!foodData || !foodData[mealType]) return null;
     
     const meal = foodData[mealType];
-    if (!meal.actualCalories || !meal.estimatedCalories) return null;
+    // estimatedCalories 또는 actualCalories 가 null 또는 undefined 이면 계산 불가
+    if (meal.actualCalories === null || meal.estimatedCalories === null || meal.actualCalories === undefined || meal.estimatedCalories === undefined) return null;
     
-    return meal.actualCalories - meal.estimatedCalories;
+    const originalDifference = meal.actualCalories - meal.estimatedCalories;
+    // meal.offset 값이 숫자 형태(0 포함)로 존재하면 사용, 아니면 0으로 간주
+    const offset = (typeof meal.offset === 'number') ? meal.offset : 0; 
+
+    // 최종 차이 = 원본 차이 + offset
+    return originalDifference + offset; 
+
   }, [foodData]);
+
+  // 필요에 따라 원본 차이만 반환하는 함수도 추가 가능
+  const getOriginalCalorieDifference = useCallback((mealType) => {
+      if (!foodData || !foodData[mealType]) return null;
+      const meal = foodData[mealType];
+      if (meal.actualCalories === null || meal.estimatedCalories === null || meal.actualCalories === undefined || meal.estimatedCalories === undefined) return null;
+      return meal.actualCalories - meal.estimatedCalories;
+  }, [foodData]);
+
+   // offset 값만 반환하는 함수
+   const getMealOffset = useCallback((mealType) => {
+       if (!foodData || !foodData[mealType]) return null;
+       const meal = foodData[mealType];
+       return (typeof meal.offset === 'number') ? meal.offset : 0;
+   }, [foodData]);
 
   const showCalorieDifferenceModal = useCallback((mealType) => {
     // 테스트 모드일 때는 기본값 표시
@@ -354,6 +376,9 @@ export const useModal = (foodData, testMode = false) => {
 
   return {
     showModal,
-    isModalAvailable: checkModalAvailable().available
+    isModalAvailable: checkModalAvailable().available,
+    calculateCalorieDifference,
+    getOriginalCalorieDifference,
+    getMealOffset
   };
 };
