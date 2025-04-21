@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Typography, Input, Row, Col, Button, Modal, Form, Table, InputNumber, message, Select, Card, Tabs, Tag, Space, Tooltip, Divider, Switch, ColorPicker, Transfer, Skeleton, Empty } from 'antd';
+import { Typography, Input, Row, Col, Button, Modal, Form, Table, InputNumber, message, Select, Card, Tabs, Tag, Space, Tooltip, Divider, Switch, ColorPicker, Transfer, Skeleton, Empty, DatePicker } from 'antd';
 import { db } from '../../firebaseconfig';
 import { collection, getDocs, doc, getDoc, updateDoc, setDoc, query, where, addDoc, deleteDoc, Timestamp, writeBatch } from 'firebase/firestore';
 import { useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
 import { useMediaQuery } from 'react-responsive';
-import { SyncOutlined, ExclamationCircleOutlined, UserOutlined, TeamOutlined, EditOutlined, SaveOutlined, UndoOutlined, PlusOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
+import { SyncOutlined, ExclamationCircleOutlined, UserOutlined, TeamOutlined, EditOutlined, SaveOutlined, UndoOutlined, PlusOutlined, DeleteOutlined, UserAddOutlined, CalendarOutlined, CoffeeOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
+dayjs.locale('ko');
 
 const { Text, Title } = Typography;
 const { Search } = Input;
@@ -48,6 +51,10 @@ const CalorieAdminPage = () => {
   
   // 미디어 쿼리로 모바일 환경 감지
   const isMobile = useMediaQuery({ maxWidth: 767 });
+
+  // 날짜 및 식사 유형 상태 추가
+  const [selectedDate, setSelectedDate] = useState(dayjs()); // 오늘 날짜로 초기화 (dayjs 객체)
+  const [selectedMealType, setSelectedMealType] = useState('breakfast'); // 기본값: 아침
 
   // 권한 체크
   useEffect(() => {
@@ -100,12 +107,14 @@ const CalorieAdminPage = () => {
     }
   }, []);
 
-  // 사용자 정보 가져오기 (그룹 정보 로딩 후 실행되도록 수정)
-  const fetchUsers = useCallback(async (loadedGroups) => {
+  // 사용자 정보 가져오기 (선택된 날짜의 food 문서 로드)
+  const fetchUsers = useCallback(async (loadedGroups, date) => {
     setLoadingUsers(true);
     try {
       const usersCollection = collection(db, 'users');
       const usersSnapshot = await getDocs(usersCollection);
+      const dateString = date.format('YYYY-MM-DD'); // dayjs 객체를 문자열로 변환
+
       const usersDataPromises = usersSnapshot.docs.map(async (userDoc) => {
         const userData = userDoc.data();
         let userGroupKey = userData.experimentGroup || DEFAULT_GROUP_KEY;
@@ -120,81 +129,30 @@ const CalorieAdminPage = () => {
         }
         const calorieBias = userData.calorieBias !== undefined ? userData.calorieBias : 0;
 
-        // --- 최근 2일 식사 데이터 및 편차 계산 --- 
-        let lastMealData = null;
-        let totalMeals = 0;
-        let totalDifferenceSum = 0; // 편차 합계
-        let mealCount = 0; // 편차 계산에 사용된 식사 수
-
-        // 날짜 필터링: 오늘 날짜 기준 2일 전 자정
-        const twoDaysAgo = new Date();
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        twoDaysAgo.setHours(0, 0, 0, 0); // 2일 전 00:00:00
-        const twoDaysAgoTimestamp = Timestamp.fromDate(twoDaysAgo); // Firestore Timestamp로 변환
-
-        const foodsCollection = collection(db, `users/${userDoc.id}/foods`);
-        // date 필드가 Timestamp 타입이고, twoDaysAgoTimestamp 이후인 문서만 조회
-        const q = query(foodsCollection, where("date", ">=", twoDaysAgoTimestamp));
-        const foodsSnapshot = await getDocs(q);
-
-        if (!foodsSnapshot.empty) {
-          totalMeals = foodsSnapshot.size; // 최근 2일간의 식사 기록 수
-          let lastMealDate = null; 
-
-          for (const foodDoc of foodsSnapshot.docs) {
-            const foodData = foodDoc.data();
-            const foodDate = foodData.date?.toDate ? foodData.date.toDate() : null;
-            const mealTypes = ['breakfast', 'lunch', 'dinner', 'snacks']; // 간식(snacks)도 포함 고려
-
-            for (const mealType of mealTypes) {
-                 if (foodData[mealType] && 
-                     foodData[mealType].actualCalories !== null && foodData[mealType].actualCalories !== undefined &&
-                     foodData[mealType].estimatedCalories !== null && foodData[mealType].estimatedCalories !== undefined) 
-                 { 
-                    const difference = foodData[mealType].actualCalories - foodData[mealType].estimatedCalories;
-                    totalDifferenceSum += difference;
-                    mealCount++;
-
-                    // 마지막 식사 데이터 업데이트 로직 (기존과 유사하게 유지)
-                    if (foodDate instanceof Date) { 
-                        const currentLastMealDate = lastMealDate instanceof Date ? lastMealDate : null;
-                        if (!currentLastMealDate || foodDate >= currentLastMealDate) { // 같은 날짜면 업데이트 되도록 >= 사용
-                            lastMealDate = foodDate;
-                            // 마지막 식사 정보 업데이트 (날짜, 타입, 칼로리 등)
-                             lastMealData = {
-                                type: mealType,
-                                date: foodDate.toLocaleDateString(),
-                                estimated: foodData[mealType].estimatedCalories,
-                                actual: foodData[mealType].actualCalories,
-                                // 원본 차이와 offset 값을 같이 저장 (표시용)
-                                originalDifference: difference, 
-                                offset: (typeof foodData[mealType].offset === 'number') ? foodData[mealType].offset : null,
-                                foods: foodData[mealType].foods || []
-                            };
-                        }
-                    }
-                 }
-            }
+        // 선택된 날짜의 food 문서 가져오기
+        let foodDocForSelectedDate = null;
+        try {
+          const foodDocRef = doc(db, `users/${userDoc.id}/foods`, dateString);
+          const foodDocSnap = await getDoc(foodDocRef);
+          if (foodDocSnap.exists()) {
+            foodDocForSelectedDate = foodDocSnap.data();
           }
+        } catch (error) {
+          console.error(`사용자 ${userDoc.id}의 ${dateString} 음식 문서 로딩 실패:`, error);
         }
-        // --- 계산 종료 ---
 
         return {
           key: userDoc.id,
-          email: userData.email || '이메일 없음',
-          name: userData.name || '이름 없음',
+          email: userData.email || '-',
+          name: userData.name || '-',
           age: userData.age || '-',
-          gender: userData.gender === 'male' ? '남성' : userData.gender === 'female' ? '여성' : '정보 없음',
+          gender: userData.gender || '-',
           height: userData.height || '-',
           weight: userData.weight || '-',
           goal: userData.goal || '-',
           group: userGroupKey,
-          calorieBias: calorieBias, // 이건 사용자 설정값
-          lastMeal: lastMealData,   // 최근 식사 정보 (최근 2일 기준)
-          totalMeals: totalMeals,   // 최근 2일 식사 기록 수
-          // 그룹 평균 편차 계산용 데이터
-          totalDifferenceSum: totalDifferenceSum, 
-          mealCount: mealCount,
+          calorieBias: calorieBias, // 사용자 설정 편차값
+          foodDocForSelectedDate: foodDocForSelectedDate, // 선택된 날짜의 문서 데이터
         };
       });
 
@@ -209,19 +167,22 @@ const CalorieAdminPage = () => {
     }
   }, []);
 
-  // 데이터 로딩 통합
+  // 데이터 로딩 통합 (selectedDate 변경 시 사용자 데이터 다시 로드)
   const loadData = useCallback(async () => {
+    setLoadingGroups(true);
+    setLoadingUsers(true); // 사용자 로딩도 시작으로 표시
     const groupsPromise = fetchGroups();
     const loadedGroups = await groupsPromise;
     if (loadedGroups.length > 0) {
-        await fetchUsers(loadedGroups);
+        await fetchUsers(loadedGroups, selectedDate); // selectedDate 전달
     }
-  }, [fetchGroups, fetchUsers]);
+    // fetchGroups, fetchUsers 내부에서 각 로딩 상태 false로 변경
+  }, [fetchGroups, fetchUsers, selectedDate]); // selectedDate 의존성 추가
 
-  // 최초 데이터 로드
+  // 최초 로드 및 selectedDate 변경 시 데이터 리로드
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData]); // loadData 자체가 selectedDate에 의존하므로 loadData만 넣어도 됨
 
   // 검색어에 따른 필터링
   useEffect(() => {
@@ -456,10 +417,26 @@ const CalorieAdminPage = () => {
   const GroupCard = ({ group }) => {
     const groupUsers = users.filter(user => user.group === group.key);
     
-    // 그룹 평균 칼로리 편차 계산 (실제 기록 기반)
-    const totalDifferenceSum = groupUsers.reduce((sum, user) => sum + (user.totalDifferenceSum || 0), 0);
-    const totalMealCount = groupUsers.reduce((sum, user) => sum + (user.mealCount || 0), 0);
-    const averageBias = totalMealCount > 0 ? Math.round(totalDifferenceSum / totalMealCount) : 0;
+    // 선택된 날짜/식사 유형의 평균 편차 계산
+    let totalSpecificDifference = 0;
+    let countWithSpecificData = 0;
+    groupUsers.forEach(user => {
+        const foodData = user.foodDocForSelectedDate;
+        const mealData = foodData ? foodData[selectedMealType] : null;
+        if (mealData && mealData.actualCalories !== null && mealData.actualCalories !== undefined && mealData.estimatedCalories !== null && mealData.estimatedCalories !== undefined) {
+            totalSpecificDifference += (mealData.actualCalories - mealData.estimatedCalories);
+            countWithSpecificData++;
+        }
+    });
+    const averageSpecificBias = countWithSpecificData > 0 ? Math.round(totalSpecificDifference / countWithSpecificData) : 0;
+
+    // 식사 유형 한글 변환
+    const mealTypeKorean = {
+        breakfast: '아침',
+        lunch: '점심',
+        dinner: '저녁',
+        snacks: '간식'
+    }[selectedMealType] || selectedMealType;
 
     const currentGroup = groups.find(g => g.key === group.key);
 
@@ -515,9 +492,9 @@ const CalorieAdminPage = () => {
               size="small"
               onClick={() => {
                 confirm({
-                  title: `${currentGroup?.name} 칼로리 편차 적용`,
+                  title: `${currentGroup?.name} ${selectedDate.format('YYYY-MM-DD')} ${mealTypeKorean} 편차 적용`,
                   icon: <ExclamationCircleOutlined />,
-                  content: `${currentGroup?.name}의 모든 사용자(${groupUsers.length}명)에게 각자 설정된 칼로리 편차(offset)를 모든 식사 기록에 적용/업데이트하시겠습니까?`,
+                  content: `${groupUsers.length}명 사용자에게 offset 적용?`,
                   onOk() { applyGroupCalorieBias(group.key); }
                 });
               }}
@@ -533,7 +510,7 @@ const CalorieAdminPage = () => {
             <Statistic title="사용자 수" value={groupUsers.length} suffix="명" />
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <Statistic title="평균 칼로리 편차 (실제 기록 기준)" value={averageBias} suffix="kcal" />
+            <Statistic title={`평균 편차 (${selectedDate.format('MM/DD')} ${mealTypeKorean})`} value={averageSpecificBias} suffix={`kcal (${countWithSpecificData}명)`} />
           </Col>
           <Col xs={24} sm={24} md={8}>
             <Space wrap>
@@ -616,40 +593,28 @@ const CalorieAdminPage = () => {
       sorter: (a, b) => a.calorieBias - b.calorieBias,
     },
     {
-      title: '최근 식사 기록 (최근 2일)',
-      key: 'lastMeal',
-      width: 200,
+      title: `${selectedDate.format('MM/DD')} ${mealTypeKorean} 정보`,
+      key: 'selectedMeal',
+      width: 180,
       render: (_, record) => {
-        if (!record.lastMeal) return <Text type="secondary">기록 없음</Text>;
-        
-        const mealType = record.lastMeal.type === 'breakfast' ? '아침' : 
-                         record.lastMeal.type === 'lunch' ? '점심' : 
-                         record.lastMeal.type === 'dinner' ? '저녁' : '간식';
-        const originalDifference = record.lastMeal.originalDifference;
-        const offset = record.lastMeal.offset;
+        const foodData = record.foodDocForSelectedDate;
+        const mealData = foodData ? foodData[selectedMealType] : null;
+        if (!mealData || mealData.actualCalories === null || mealData.estimatedCalories === null) {
+            return <Text type="secondary">기록 없음</Text>;
+        }
+        const originalDifference = mealData.actualCalories - mealData.estimatedCalories;
+        const offset = mealData.offset;
         const finalDifference = originalDifference + (offset ?? 0);
-        
         return (
-          <Space direction="vertical" size={0}>
-            <Text>{record.lastMeal.date} {mealType}</Text>
-            <Text>예상: {record.lastMeal.estimated} / 실제: {record.lastMeal.actual}</Text>
-            <Space>
-              <Tooltip title={`원본 차이 (실제 - 예상): ${originalDifference > 0 ? '+' : ''}${originalDifference}kcal`}>
-                  <Text style={{ color: originalDifference > 0 ? '#ff4d4f' : originalDifference < 0 ? '#1677ff' : 'inherit' }}>
-                    ({originalDifference > 0 ? '+' : ''}{originalDifference}kcal)
-                  </Text>
-              </Tooltip>
-              {offset !== null && offset !== 0 && (
-                <Tooltip title={`적용된 편차(offset): ${offset > 0 ? '+' : ''}${offset}kcal`}>
-                  <Text strong style={{ color: finalDifference > 0 ? '#ff4d4f' : finalDifference < 0 ? '#1677ff' : 'inherit' }}>
-                    → {finalDifference > 0 ? '+' : ''}{finalDifference}kcal
-                  </Text>
-                 </Tooltip>
-              )}
-            </Space>
-          </Space>
+             <Space direction="vertical" size={0}>
+                <Text>예:{mealData.estimatedCalories} / 실:{mealData.actualCalories}</Text>
+                <Space>
+                   <Tooltip title={`원본차(${originalDifference})`}><Text style={{ color: originalDifference > 0 ? '#ff4d4f' : originalDifference < 0 ? '#1677ff' : 'inherit' }}>({originalDifference>0?'+':''}{originalDifference})</Text></Tooltip>
+                   {offset !== null && offset !== 0 && (<Tooltip title={`편차(offset:${offset})`}><Text strong style={{ color: finalDifference > 0 ? '#ff4d4f' : finalDifference < 0 ? '#1677ff' : 'inherit' }}>→{finalDifference>0?'+':''}{finalDifference}</Text></Tooltip>)}
+                </Space>
+             </Space>
         );
-      },
+      }
     },
     {
       title: '작업',
@@ -664,9 +629,9 @@ const CalorieAdminPage = () => {
             icon={<SyncOutlined />}
             onClick={() => {
               confirm({
-                title: '개별 칼로리 편차(offset) 적용',
+                title: '개별 편차 적용',
                 icon: <ExclamationCircleOutlined />,
-                content: `${record.name || record.email}님의 모든 식사 기록에 현재 설정된 칼로리 편차 (${record.calorieBias > 0 ? '+' : ''}${record.calorieBias}kcal)를 offset값으로 적용하시겠습니까?`,
+                content: `${record.name} (${selectedDate.format('YYYY-MM-DD')} ${mealTypeKorean}) offset(${record.calorieBias}) 적용?`,
                 onOk() { applyCalorieBias(record.key); }
               });
             }}
@@ -707,20 +672,24 @@ const CalorieAdminPage = () => {
                   </Text>
                  </Tooltip>
               </div>
-              {record.lastMeal && (
+              {record.foodDocForSelectedDate && (
                 <div style={{ marginTop: 8, fontSize: '12px', borderTop: '1px dashed #eee', paddingTop: 8 }}>
-                    <Text type="secondary">최근 식사 ({record.lastMeal.date}): </Text>
+                    <Text type="secondary">최근 식사 ({selectedDate.format('MM/DD')} {selectedMealType}): </Text>
                     {(() => {
-                       const originalDifference = record.lastMeal.originalDifference;
-                       const offset = record.lastMeal.offset;
-                       const finalDifference = originalDifference + (offset ?? 0);
-                       return (
-                            <Tooltip title={`실제: ${record.lastMeal.actual}, 예상: ${record.lastMeal.estimated}, 편차(offset): ${offset ?? 0}`}>
-                                <Text style={{ color: finalDifference > 0 ? '#ff4d4f' : finalDifference < 0 ? '#1677ff' : 'inherit' }}>
-                                     {finalDifference > 0 ? '+' : ''}{finalDifference} kcal
-                                </Text>
-                            </Tooltip>
-                       );
+                       const mealData = record.foodDocForSelectedDate[selectedMealType];
+                       if (mealData && mealData.actualCalories !== null && mealData.estimatedCalories !== null) {
+                           const originalDifference = mealData.actualCalories - mealData.estimatedCalories;
+                           const offset = mealData.offset;
+                           const finalDifference = originalDifference + (offset ?? 0);
+                           return (
+                                <Tooltip title={`실제: ${mealData.actualCalories}, 예상: ${mealData.estimatedCalories}, 편차(offset): ${offset ?? 0}`}>
+                                    <Text style={{ color: finalDifference > 0 ? '#ff4d4f' : finalDifference < 0 ? '#1677ff' : 'inherit' }}>
+                                         {finalDifference > 0 ? '+' : ''}{finalDifference} kcal
+                                    </Text>
+                                </Tooltip>
+                           );
+                       }
+                       return <Text type="secondary">기록 없음</Text>;
                     })()}
                 </div>
               )}
@@ -741,9 +710,9 @@ const CalorieAdminPage = () => {
             icon={<SyncOutlined />}
             onClick={() => {
               confirm({
-                title: '개별 칼로리 편차(offset) 적용',
+                title: '개별 편차 적용',
                 icon: <ExclamationCircleOutlined />,
-                content: `${record.name || record.email}님의 모든 식사 기록에 칼로리 편차(offset)를 적용하시겠습니까?`,
+                content: `${record.name} (${selectedDate.format('YYYY-MM-DD')} ${mealTypeKorean}) offset(${record.calorieBias}) 적용?`,
                 onOk() { applyCalorieBias(record.key); }
               });
             }}
@@ -755,11 +724,132 @@ const CalorieAdminPage = () => {
     }
   ];
 
+  // 칼로리 편차 적용 함수 (선택된 날짜/식사 유형 타겟)
+  const applyCalorieBias = async (userId) => {
+    if (!selectedDate || !selectedMealType) {
+        message.error('편차를 적용할 날짜와 식사 유형을 선택하세요.');
+        return;
+    }
+    try {
+      setLoadingUsers(true); // 사용자 데이터 관련 로딩 표시
+      const userInfo = users.find(u => u.key === userId);
+      if (!userInfo) { message.error("사용자 없음"); return; }
+      
+      const userCalorieBias = userInfo.calorieBias;
+      const dateString = selectedDate.format('YYYY-MM-DD');
+      const foodDocRef = doc(db, `users/${userId}/foods`, dateString);
+
+      // 문서 존재 여부 확인 후 업데이트
+      const foodDocSnap = await getDoc(foodDocRef);
+      if (foodDocSnap.exists()) {
+          const updateData = { [`${selectedMealType}.offset`]: userCalorieBias };
+          await updateDoc(foodDocRef, updateData);
+          message.success(`${userInfo.name || userInfo.email}의 ${dateString} ${selectedMealType} 편차(offset: ${userCalorieBias}) 적용 완료`);
+          // 중요: UI 즉시 반영 위해 로컬 상태 업데이트 또는 전체 데이터 리로드
+          // 여기서는 간단하게 전체 리로드
+          await loadData(); 
+      } else {
+          message.warn(`${userInfo.name || userInfo.email}님은 ${dateString} 날짜의 식사 기록이 없습니다.`);
+      }
+
+    } catch (error) {
+      console.error('개별 편차(offset) 적용 실패:', error);
+      message.error('개별 편차(offset) 적용에 실패했습니다.');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const applyGroupCalorieBias = async (groupKey) => {
+     if (!selectedDate || !selectedMealType) {
+        message.error('편차를 적용할 날짜와 식사 유형을 선택하세요.');
+        return;
+    }
+    try {
+      setLoadingUsers(true);
+      const groupUsers = users.filter(user => user.group === groupKey);
+      if (groupUsers.length === 0) { message.info('그룹 사용자 없음'); setLoadingUsers(false); return; }
+      
+      const dateString = selectedDate.format('YYYY-MM-DD');
+      let updatedUserCount = 0;
+      const batch = writeBatch(db); // Batch 사용
+      const promises = []; // 각 사용자 문서 존재 확인 Promise 배열
+
+      for (const groupUser of groupUsers) {
+          const userId = groupUser.key;
+          const userCalorieBias = groupUser.calorieBias;
+          const foodDocRef = doc(db, `users/${userId}/foods`, dateString);
+          
+          // 비동기로 각 사용자 문서 확인
+          promises.push(
+              getDoc(foodDocRef).then(foodDocSnap => {
+                  if (foodDocSnap.exists()) {
+                      // 문서가 존재하면 Batch에 업데이트 추가
+                      batch.update(foodDocRef, { [`${selectedMealType}.offset`]: userCalorieBias });
+                      return true; // 업데이트 대상임을 표시
+                  }
+                  return false; // 업데이트 대상 아님
+              })
+          );
+      }
+
+      // 모든 사용자 문서 확인 완료 기다림
+      const updateResults = await Promise.all(promises);
+      updatedUserCount = updateResults.filter(result => result === true).length;
+
+      if (updatedUserCount > 0) {
+          await batch.commit(); // Batch 실행
+          const groupName = groups.find(g => g.key === groupKey)?.name || groupKey;
+          message.success(`${groupName} 그룹 ${updatedUserCount}명 사용자의 ${dateString} ${selectedMealType} 편차(offset) 적용 완료`);
+          await loadData(); // 데이터 리로드
+      } else {
+          message.info(`${groups.find(g => g.key === groupKey)?.name || groupKey} 그룹 사용자 중 ${dateString} 날짜의 식사 기록이 있는 사람이 없습니다.`);
+      }
+
+    } catch (error) {
+      console.error('그룹 편차(offset) 적용 실패:', error);
+      message.error('그룹 편차(offset) 적용에 실패했습니다.');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   return (
     <div style={{ padding: isMobile ? '8px' : '20px' }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 16, padding: isMobile ? '0 8px' : 0 }}>
         <Title level={isMobile ? 4 : 2} style={{ color: '#5FDD9D', margin: 0 }}>칼로리 편차 관리</Title>
         <Button onClick={loadData} icon={<SyncOutlined />} loading={loadingGroups || loadingUsers}>새로고침</Button>
+      </Row>
+
+      <Row gutter={[8, 16]} align="middle" style={{ marginBottom: 20, padding: isMobile ? '0 8px' : 0 }}>
+        <Col xs={12} sm={8} md={6}>
+           <DatePicker 
+              value={selectedDate} 
+              onChange={(date) => setSelectedDate(date || dayjs())} // null 처리
+              allowClear={false} // 날짜 선택 필수
+              style={{ width: '100%' }} 
+              size={isMobile ? 'small' : 'middle'}
+              placeholder="날짜 선택"
+           />
+        </Col>
+        <Col xs={12} sm={8} md={6}>
+            <Select 
+              value={selectedMealType} 
+              onChange={(value) => setSelectedMealType(value)} 
+              style={{ width: '100%' }} 
+              size={isMobile ? 'small' : 'middle'}
+            >
+              <Option value="breakfast"><CoffeeOutlined /> 아침</Option>
+              <Option value="lunch"><UserOutlined /> 점심</Option> {/* 아이콘 변경 가능 */} 
+              <Option value="dinner"><TeamOutlined /> 저녁</Option> {/* 아이콘 변경 가능 */} 
+              <Option value="snacks"><CalendarOutlined /> 간식</Option> {/* 아이콘 변경 가능 */} 
+            </Select>
+        </Col>
+        <Col xs={24} sm={8} md={12}>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+                선택한 날짜와 식사 유형 기준으로 평균 편차 계산 및 offset 적용이 수행됩니다.
+            </Text>
+        </Col>
       </Row>
 
       <Tabs 
