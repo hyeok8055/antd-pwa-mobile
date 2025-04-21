@@ -156,8 +156,16 @@ const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
                  <Space align='center'><LoopOutline /><span style={{ fontFamily: 'Pretendard-600' }}>새로고침</span></Space>
               </Button>
               {isAdmin && (
-                <Button block fill='outline' shape='rounded' color='success' onClick={handleAdminPageClick}>
+                <Button block fill='outline' shape='rounded' color='success' onClick={handleAdminPageClick} style={{ marginBottom: '12px' }}>
                   <Space align='center'><AppstoreOutline /><span style={{ fontFamily: 'Pretendard-600' }}>음식 데이터 관리</span></Space>
+                </Button>
+              )}
+              {isAdmin && (
+                <Button block fill='outline' shape='rounded' color='primary' onClick={() => {
+                  navigate('/calorie-admin');
+                  onClose();
+                }}>
+                  <Space align='center'><LoopOutline /><span style={{ fontFamily: 'Pretendard-600' }}>칼로리 편차 관리</span></Space>
                 </Button>
               )}
             </div>

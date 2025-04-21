@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate, BrowserRouter} from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AppRoutes from './routes';
@@ -7,8 +7,7 @@ import { auth, db, checkDeviceCompatibility, messaging, getToken } from './fireb
 import { onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthStatus, clearAuthStatus, setFcmToken } from './redux/actions/authActions';
-import { doc, getDoc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
-import { Modal, Button } from 'antd-mobile';
+import { doc, getDoc } from 'firebase/firestore';
 
 const App = () => {
   const dispatch = useDispatch();
@@ -258,7 +257,7 @@ const App = () => {
       )}
       
       {/* --- 테스트용 FCM 토큰 확인 버튼 --- */}
-      <div style={{
+      {/* <div style={{
           position: 'fixed',
           top: '70px', // PWA 설치 버튼 아래에 위치
           left: '50%',
@@ -274,7 +273,7 @@ const App = () => {
           >
               FCM 토큰 확인 (콘솔/Alert)
           </Button>
-      </div>
+      </div> */}
       {/* --- 테스트 버튼 끝 --- */}
       
       {/* iOS 알림 권한 요청 버튼 */} 
