@@ -75,17 +75,20 @@ export const useNotificationPermission = () => {
     }
   }, [registerFcmToken]); // registerFcmToken 의존성 추가
 
-  // 권한 상태 및 디바이스 정보에 따라 프롬프트 표시 여부 결정 (iOS 16.4+ 전용)
+  // 권한 상태 및 디바이스 정보에 따라 프롬프트 표시 여부 결정
   useEffect(() => {
     // 알림 API 지원 여부도 함께 확인
     if (deviceInfo && permissionStatus === 'default' && ('Notification' in window)) {
-      // 오직 iOS 16.4+ 인 경우에만 프롬프트 표시
-      if (deviceInfo.isIOS && deviceInfo.isCompatibleIOS) {
-         console.log("iOS 16.4+ 감지, 알림 프롬프트 표시");
+      // PWA 모드에서 Android 기기이거나 iOS 16.4+ 인 경우에 프롬프트 표시
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                    (deviceInfo.isIOS && window.navigator.standalone);
+      
+      if ((isAndroid && isPWA) || (deviceInfo.isIOS && deviceInfo.isCompatibleIOS)) {
+         console.log("호환 가능한 모바일 기기 감지, 알림 프롬프트 표시");
          setShowPermissionPrompt(true);
       } else {
-          // Non-iOS 또는 호환되지 않는 iOS 버전의 경우 자동으로 프롬프트 표시 안 함
-          console.log("Non-iOS or incompatible iOS, permission default. 프롬프트 자동 표시 안 함.");
+          console.log("호환되지 않는 기기 또는 모드, 프롬프트 자동 표시 안 함.");
           setShowPermissionPrompt(false);
       }
     } else {
