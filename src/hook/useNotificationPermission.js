@@ -77,19 +77,20 @@ export const useNotificationPermission = () => {
 
   // 권한 상태 및 디바이스 정보에 따라 프롬프트 표시 여부 결정
   useEffect(() => {
-    if (deviceInfo && permissionStatus === 'default') {
-      // iOS 16.4 이상인 경우에만 프롬프트 표시
-      if (deviceInfo.isIOS && deviceInfo.isCompatibleIOS) {
-         console.log("iOS 16.4+ 감지, 알림 프롬프트 표시");
+    // 알림 API 지원 여부도 함께 확인
+    if (deviceInfo && permissionStatus === 'default' && ('Notification' in window)) {
+      // iOS 16.4+ 또는 Non-iOS (Android 포함) 인 경우 프롬프트 표시
+      if ((deviceInfo.isIOS && deviceInfo.isCompatibleIOS) || !deviceInfo.isIOS) {
+         console.log(`Permission default on ${deviceInfo.isIOS ? 'iOS 16.4+' : 'Non-iOS'}. Showing permission prompt.`);
          setShowPermissionPrompt(true);
-      } else if (!deviceInfo.isIOS) {
-          // 안드로이드 또는 다른 OS의 경우 (필요하다면 여기서 바로 권한 요청 또는 다른 방식의 프롬프트 표시 가능)
-          // 현재 요구사항: iOS만 특별 처리, 나머지는 사용자가 직접 설정 유도 또는 다른 버튼 통해 요청
-          console.log("Non-iOS device, permission default. 프롬프트 자동 표시 안 함.");
-          // setShowPermissionPrompt(true); // 필요 시 주석 해제
+      } else {
+          // 호환되지 않는 iOS 버전 등
+          console.log("Device condition not met for showing prompt (e.g., incompatible iOS).");
+          setShowPermissionPrompt(false);
       }
     } else {
-      setShowPermissionPrompt(false); // granted, denied 상태 또는 deviceInfo 로드 전에는 숨김
+      // 이미 권한이 결정되었거나, 알림 미지원, 또는 deviceInfo 로드 전에는 숨김
+      setShowPermissionPrompt(false);
     }
   }, [deviceInfo, permissionStatus]);
 
