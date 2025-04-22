@@ -21,7 +21,10 @@ const { Text } = Typography;
 const ADMIN_EMAILS = [
   'eodud653923@gmail.com',
   'youngwonhahn00@gmail.com',
-  'juhyeok0123@gmail.com'
+  'juhyeok0123@gmail.com',
+  'wn990123@gmail.com',
+  'garcia29845@gmail.com',
+  'yunj29845@gmail.com',
 ];
 
 const SidePopUp = ({ visible, onClose, onLogout, userName, email }) => {
