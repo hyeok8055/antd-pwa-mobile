@@ -6,6 +6,7 @@ importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-com
 const firebaseConfig = {
   apiKey: "AIzaSyBqu5TDSwaY_qvunrS8pJrWdpIlwJeOMrU",
   authDomain: "calori-sync-f0431.firebaseapp.com",
+  databaseURL: "https://calori-sync-f0431-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "calori-sync-f0431",
   storageBucket: "calori-sync-f0431.firebasestorage.app",
   messagingSenderId: "830533101887",
@@ -28,7 +29,6 @@ messaging.onBackgroundMessage(function(payload) {
   const notificationOptions = {
     body: payload.notification?.body || '',
     icon: '/icons/maskable_icon_x192.png', // public/icons 폴더 내 아이콘 경로
-    // badge, image, actions 등 추가 옵션 설정 가능
   };
 
   // 시스템 알림 표시

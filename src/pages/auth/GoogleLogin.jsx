@@ -131,13 +131,6 @@ const GoogleLogin = () => {
           {loading ? '로그인 중...' : 'Google 계정으로 로그인'}
         </Button>
         
-        {/* 필요하다면 다른 로그인 옵션 추가 (예: 이메일 로그인) */}
-        {/* 
-        <Divider style={{ margin: '30px 0' }}>또는</Divider>
-        <Button block style={{ height: '50px', borderRadius: '8px', fontFamily: 'Pretendard-600' }}>
-          이메일로 로그인
-        </Button> 
-        */}
       </Card>
       {loading && (
         <div style={{

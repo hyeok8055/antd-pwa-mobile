@@ -25,45 +25,11 @@ const db = getFirestore(app);
 const realtimeDb = getDatabase(app);
 const messaging = getMessaging(app);
 
-// 디바이스 및 브라우저 체크 함수
-const checkDeviceCompatibility = () => {
-  // iOS 기기 체크
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  
-  // iOS 버전 체크 (iOS 16.4+ 필요)
-  let isCompatibleIOS = false;
-  if (isIOS) {
-    const match = navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
-    if (match) {
-      const version = [
-        parseInt(match[1], 10),
-        parseInt(match[2], 10),
-        parseInt(match[3] || 0, 10)
-      ];
-      // iOS 16.4 이상
-      isCompatibleIOS = version[0] >= 16 && version[1] >= 4;
-    }
-  }
-  
-  // Safari 브라우저 체크
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  
-  return {
-    isIOS,
-    isCompatibleIOS,
-    isSafari,
-    isCompatible: !isIOS || isCompatibleIOS,
-    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  };
-};
-
 export { 
   app, 
   auth, 
   db, 
   realtimeDb, 
-  checkDeviceCompatibility,
   messaging,
-  getToken,
-  onMessage
+  getToken
 };
