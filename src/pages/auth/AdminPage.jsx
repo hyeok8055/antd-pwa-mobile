@@ -244,14 +244,8 @@ const AdminPage = () => {
               
               // 각 식사의 foods 배열 업데이트
               const updatedFoods = foodData[mealType].foods.map(food => {
-                // 음식 이름이 일치하고 영양성분 정보가 없는 경우 업데이트
-                if (food.name === foodName && 
-                    (food.calories === 0 || !food.calories || 
-                     !food.nutrients || 
-                     food.nutrients.carbs === 0 || 
-                     food.nutrients.protein === 0 || 
-                     food.nutrients.fat === 0)) {
-                  
+                // 음식 이름이 일치하는 경우 업데이트
+                if (food.name === foodName) {
                   totalUpdates++;
                   updated = true;
                   
