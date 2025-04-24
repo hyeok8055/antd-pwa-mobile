@@ -115,39 +115,11 @@ const App = () => {
   useAuth();
   const deviceInfo = useDeviceInfo();
   const { showInstallPrompt, installPwa } = usePwaInstall();
-  // 알림 권한 훅 사용
-  const { showPermissionPrompt, requestPermission, permissionStatus } = useNotificationPermission();
+  // 알림 권한 훅 사용 (isAndroidPwa 속성 추가)
+  const { showPermissionPrompt, requestPermission, isAndroidPwa } = useNotificationPermission();
 
-  // 안드로이드 기기에서 직접 알림 권한 요청 (PWA 표준 방식)
-  useEffect(() => {
-    const requestAndroidNotificationPermission = async () => {
-      if (!deviceInfo) return;
-      
-      // 안드로이드 기기 감지
-      const isAndroid = /Android/i.test(navigator.userAgent);
-      // PWA 모드 감지
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches;
-      
-      // 안드로이드 PWA 모드이고 권한이 결정되지 않은 경우
-      if (isAndroid && isPWA && permissionStatus === 'default' && 'Notification' in window) {
-        console.log('안드로이드 PWA에서 알림 권한 자동 요청 시도');
-        try {
-          // 서비스 워커가 등록되어 있는지 확인
-          const registration = await navigator.serviceWorker.ready;
-          
-          // 알림 권한 직접 요청 (Android 표준 방식)
-          const permission = await Notification.requestPermission();
-          console.log('안드로이드 알림 권한 요청 결과:', permission);
-          
-          // 여기서 필요한 경우 추가 로직 수행 가능 (FCM 토큰 등록 등)
-        } catch (error) {
-          console.error('안드로이드 알림 권한 요청 오류:', error);
-        }
-      }
-    };
-
-    requestAndroidNotificationPermission();
-  }, [deviceInfo, permissionStatus]);
+  // 이제 useEffect에서 직접 안드로이드 알림 권한을 요청하지 않음
+  // useNotificationPermission 훅에서 모든 환경별 권한 요청 로직을 처리함
 
   return (
     <BrowserRouter>
@@ -166,7 +138,7 @@ const App = () => {
         </div>
       )}
 
-      {/* 알림 권한 요청 토스트 (iOS 16.4+ 전용) */}
+      {/* 알림 권한 요청 토스트 */}
       {showPermissionPrompt && (
         <div style={notificationPromptStyle}>
           <span>알림 권한이 필요합니다</span>
