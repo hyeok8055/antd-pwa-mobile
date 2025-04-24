@@ -9,6 +9,9 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './redux/store';
 import ko_KR from 'antd-mobile/es/locales/ko-KR'
 
+// 서비스 워커는 vite-plugin-pwa에 의해 자동으로 등록됩니다.
+// 별도의 등록 코드가 필요하지 않습니다.
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ConfigProvider theme={{
