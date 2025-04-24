@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/firebaseconfig';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getDatabase, ref, get } from 'firebase/database';
+import { getDatabase, ref, get, orderByChild, equalTo, query, orderByKey, startAt, endAt, limitToFirst } from 'firebase/database';
 import { useSelector } from 'react-redux';
 
 const getTodayDate = () => {
@@ -161,26 +161,53 @@ export const useFood = () => {
       const foodDetails = [];
 
       for (const foodName of foodNames) {
-        const foodRef = ref(rtdb, `foods/${foodName}`);
-        const snapshot = await get(foodRef);
-
-        if (snapshot.exists()) {
-          const foodData = snapshot.val();
-          // 데이터가 있지만 칼로리나 영양소 정보가 없는 경우 기본값 설정
-          foodDetails.push({
-            name: foodName,
-            calories: foodData.calories || 0,
-            weight: foodData.weight || '100g',
-            nutrients: {
-              carbs: foodData.nutrients?.carbs || 0,
-              fat: foodData.nutrients?.fat || 0,
-              protein: foodData.nutrients?.protein || 0
-            },
-            ...foodData
-          });
-        } else {
-          console.log(`${foodName}에 대한 정보가 없습니다.`);
-          // 정보가 없는 경우 기본값으로 설정
+        try {
+          // name 속성으로만 조회
+          const nameQueryRef = query(
+            ref(rtdb, 'foods'),
+            orderByChild('name'),
+            equalTo(foodName),
+            limitToFirst(1)
+          );
+          
+          const nameQuerySnapshot = await get(nameQueryRef);
+          
+          if (nameQuerySnapshot.exists()) {
+            // name 속성으로 찾았을 경우 (첫 번째 결과만 사용)
+            let foodData;
+            nameQuerySnapshot.forEach((childSnapshot) => {
+              foodData = childSnapshot.val();
+              return true; // forEach 루프 중단
+            });
+            
+            foodDetails.push({
+              name: foodName,
+              calories: foodData.calories || 0,
+              weight: foodData.weight || '100g',
+              nutrients: {
+                carbs: foodData.nutrients?.carbs || 0,
+                fat: foodData.nutrients?.fat || 0,
+                protein: foodData.nutrients?.protein || 0
+              },
+              ...foodData
+            });
+          } else {
+            // 찾지 못한 경우
+            console.log(`${foodName}에 대한 정보가 없습니다.`);
+            foodDetails.push({ 
+              name: foodName, 
+              calories: 0,
+              weight: '100g',
+              nutrients: {
+                carbs: 0,
+                fat: 0,
+                protein: 0
+              }
+            });
+          }
+        } catch (queryErr) {
+          console.error(`${foodName} 조회 중 오류 발생:`, queryErr);
+          // 오류 발생 시에도 기본값 추가
           foodDetails.push({ 
             name: foodName, 
             calories: 0,
@@ -193,6 +220,7 @@ export const useFood = () => {
           });
         }
       }
+      
       return foodDetails;
     } catch (err) {
       console.error('음식 정보를 가져오는 중 오류 발생:', err);
