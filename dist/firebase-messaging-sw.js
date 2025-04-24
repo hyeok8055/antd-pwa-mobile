@@ -60,19 +60,6 @@ messaging.onBackgroundMessage(function(payload) {
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Firebase 메시징 관련 함수 내보내기 (메인 서비스 워커에서 사용 가능)
-self.firebaseMessagingSupport = {
-  // 테스트 알림 표시 함수
-  showTestNotification: () => {
-    console.log('[firebase-messaging-sw.js] 테스트 알림 생성');
-    return self.registration.showNotification('테스트 알림', {
-      body: '알림 시스템이 정상 작동 중입니다',
-      icon: '/icons/maskable_icon_x192.png',
-      vibrate: [100, 50, 100]
-    });
-  }
-};
-
 // 알림 클릭 이벤트 리스너 정의
 self.addEventListener('notificationclick', event => {
   console.log('[firebase-messaging-sw.js] 알림 클릭됨:', event);
