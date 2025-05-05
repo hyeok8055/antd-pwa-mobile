@@ -4675,6 +4675,7 @@ function createHandlerBoundToURL(url) {
   return precacheController.createHandlerBoundToURL(url);
 }
 
+importScripts("firebase-messaging-sw.js");
 self.skipWaiting();
 clientsClaim();
 
@@ -4691,7 +4692,7 @@ precacheAndRoute([{
   "revision": "40d10fb7cbd0b07134ea4692509922b2"
 }, {
   "url": "index.html",
-  "revision": "0.o1rb08f47r"
+  "revision": "0.jjhfce62ajo"
 }], {});
 cleanupOutdatedCaches();
 registerRoute(new NavigationRoute(createHandlerBoundToURL("index.html"), {

@@ -217,7 +217,7 @@ const QnA = () => {
         <p className="qna-contact">
           더 궁금한 점이 있으시면 언제든지 문의해주세요.
           <br />
-          이메일: support@healthapp.com
+          이메일: juheyok0123@gmail.com
         </p>
       </div>
       <div className='h-[7%]'></div>

@@ -21,6 +21,7 @@ const Meal = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const navigate = useNavigate();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalPage, setModalPage] = useState(1);
   const [newFood, setNewFood] = useState({
     name: '',
     calories: null,
@@ -31,12 +32,16 @@ const Meal = () => {
     },
     weight: '',
   });
+  const [foodSearchResults, setFoodSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [noSearchResult, setNoSearchResult] = useState(false);
+  const [selectedFoodInfo, setSelectedFoodInfo] = useState(null);
   const dispatch = useDispatch();
   const foods = useSelector((state) => state.food.foods);
   const listRef = useRef(null);
   const containerRef = useRef(null);
   const [listHeight, setListHeight] = useState(400);
-  const [weightUnit, setWeightUnit] = useState('인분');
+  const [weightUnit, setWeightUnit] = useState('g');
 
   useEffect(() => {
     const foodsRef = ref(realtimeDb, 'foods');
@@ -123,10 +128,18 @@ const Meal = () => {
 
   const handleAddFoodClick = () => {
     setIsModalVisible(true);
+    setModalPage(1);
+    setFoodSearchResults([]);
+    setNoSearchResult(false);
+    setSelectedFoodInfo(null);
   };
 
   const handleModalCancel = () => {
     setIsModalVisible(false);
+    setModalPage(1);
+    setFoodSearchResults([]);
+    setNoSearchResult(false);
+    setSelectedFoodInfo(null);
     setNewFood({
       name: '',
       calories: null,
@@ -357,6 +370,147 @@ const Meal = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [handleResize]);
+
+  const searchFoodNutrition = () => {
+    if (!newFood.name.trim()) return;
+    
+    setIsSearching(true);
+    setNoSearchResult(false);
+    setFoodSearchResults([]);
+    
+    // 여기에서는 실제 API 호출이 필요하지만, 
+    // 현재 프론트엔드에서 직접 fatsecret 웹사이트를 검색할 수 없으므로
+    // 백엔드 API를 통해 구현해야 함을 안내
+    
+    // 모의 데이터로 대체 (실제 구현 시 API 호출 필요)
+    setTimeout(() => {
+      const mockResults = [
+        {
+          name: '김치찌개',
+          brand: '일반명',
+          unit: '1인분 (300g)',
+          calories: 250,
+          fat: 15,
+          carbs: 10,
+          protein: 20
+        },
+        {
+          name: '순두부찌개',
+          brand: '일반명',
+          unit: '1인분 (350g)',
+          calories: 200,
+          fat: 12,
+          carbs: 8,
+          protein: 18
+        },
+        {
+          name: '된장찌개',
+          brand: '일반명',
+          unit: '1인분 (300ml)',
+          calories: 180,
+          fat: 8,
+          carbs: 15,
+          protein: 12
+        },
+        {
+          name: '김치찌개',
+          brand: '일반명',
+          unit: '1인분 (300g)',
+          calories: 250,
+          fat: 15,
+          carbs: 10,
+          protein: 20
+        },
+        {
+          name: '순두부찌개',
+          brand: '일반명',
+          unit: '1인분 (350g)',
+          calories: 200,
+          fat: 12,
+          carbs: 8,
+          protein: 18
+        },
+        {
+          name: '된장찌개',
+          brand: '일반명',
+          unit: '1인분 (300ml)',
+          calories: 180,
+          fat: 8,
+          carbs: 15,
+          protein: 12
+        }
+      ];
+      
+      // newFood.name이 "없음"이면 결과가 없는 상태 시뮬레이션
+      if (newFood.name.includes('없음')) {
+        setNoSearchResult(true);
+        setFoodSearchResults([]);
+      } else {
+        setFoodSearchResults(mockResults);
+      }
+      
+      setIsSearching(false);
+    }, 1000);
+  };
+
+  // 직접 추가하기 함수
+  const handleManualAdd = () => {
+    // 직접 입력 모드로 3단계로 이동
+    setSelectedFoodInfo(null); // 선택된 음식 정보 초기화
+    setNewFood({
+      ...newFood,
+      calories: null,
+      nutrients: {
+        carbs: null,
+        protein: null,
+        fat: null
+      }
+    });
+    setModalPage(3);
+  };
+
+  const selectFoodInfo = (foodInfo) => {
+    setSelectedFoodInfo(foodInfo);
+    
+    // 선택된 음식 정보로 newFood 업데이트
+    setNewFood({
+      ...newFood,
+      calories: foodInfo.calories,
+      nutrients: {
+        carbs: foodInfo.carbs,
+        protein: foodInfo.protein,
+        fat: foodInfo.fat
+      }
+    });
+    
+    // unit 문자열에서 g 또는 ml 단위 추출 및 설정
+    if (foodInfo.unit) {
+      // 괄호 안의 값 추출 (예: "1인분 (300g)" -> "300g")
+      const match = foodInfo.unit.match(/\(([^)]+)\)/);
+      if (match && match[1]) {
+        const weightStr = match[1];
+        
+        // g 또는 ml 단위 확인
+        if (weightStr.includes('g')) {
+          setWeightUnit('g');
+          // 숫자만 추출하여 weight에 설정 (예: "300g" -> "300")
+          const weightValue = weightStr.replace(/[^0-9.]/g, '');
+          setNewFood(prev => ({
+            ...prev,
+            weight: weightValue
+          }));
+        } else if (weightStr.includes('ml')) {
+          setWeightUnit('ml');
+          // 숫자만 추출하여 weight에 설정 (예: "500ml" -> "500")
+          const weightValue = weightStr.replace(/[^0-9.]/g, '');
+          setNewFood(prev => ({
+            ...prev,
+            weight: weightValue
+          }));
+        }
+      }
+    }
+  };
 
   return (
     <div style={{ padding: '20px', height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
@@ -633,57 +787,870 @@ const Meal = () => {
       </div>
       
       <Modal
-        title={<Text style={{ fontSize: '20px', fontWeight: '800', color: '#5FDD9D', letterSpacing: '1px', fontFamily: 'Pretendard-900'}}>
-          음식 추가하기
-        </Text>}
         visible={isModalVisible}
-        onOk={handleModalOk}
         onCancel={handleModalCancel}
-        okText="추가하기"
-        cancelText="취소"
-        okButtonProps={{ 
-          disabled: !isFormValid(),
-          style: isFormValid() ? { backgroundColor: '#5FDD9D', borderColor: '#5FDD9D' } : undefined
+        footer={null}
+        style={{ 
+          top: 0, 
+          padding: 0,
+          borderRadius: 8,
+          height: '90vh', 
+          padding: 0,
+          overflow: 'hidden'
         }}
-        style={{ borderRadius: '12px' }}
+        width="100%"
+        centered
+        destroyOnClose
+        className="fullscreen-modal"
       >
-        <Form layout="vertical">
-          <Form.Item 
-            label={<Text style={{ fontSize: '16px', fontWeight: '600', color: '#333', fontFamily: 'Pretendard-600'}}>음식 이름</Text>}
-            help={<Text style={{ color: '#888' }}>음식 이름을 상세하게 입력해주세요 (예: 돼지고기 김치찌개, 홍길동 부대찌개 라면 등)</Text>}
-          >
-            <Input
-              name="name"
-              value={newFood.name}
-              placeholder="예) 김치찌개, 돼지고기 김치찌개"
-              onChange={(e) => handleInputChange(e, 'name')}
-              style={{ borderRadius: '8px', height: '40px' }}
-            />
-          </Form.Item>
-          <Form.Item 
-            label={<Text style={{ fontSize: '16px', fontWeight: '600', color: '#333', fontFamily: 'Pretendard-600'}}>총 중량</Text>}
-            help={<Text style={{ color: '#888' }}>기본 단위는 '인분'입니다. 그램 단위로 입력하시려면 단위를 변경해주세요.</Text>}
-          >
-            <Input
-              name="weight"
-              value={newFood.weight}
-              placeholder="예) 1, 2, 0.5"
-              onChange={(e) => handleInputChange(e, 'weight')}
-              style={{ width: '100%', borderRadius: '8px', height: '40px' }}
-              addonAfter={
-                <Select 
-                  defaultValue="인분" 
-                  value={weightUnit} 
-                  onChange={handleWeightUnitChange}
-                  style={{ borderTopRightRadius: '8px', borderBottomRightRadius: '8px' }}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: '90vh', 
+          background: 'white',
+          position: 'relative'
+        }}>
+          {/* 헤더 */}
+          <div style={{ 
+            padding: '8px 20px 8px 4px', 
+            borderBottom: '1px solid #f0f0f0',
+            backgroundColor: 'white',
+            position: 'sticky',
+            top: 0,
+            zIndex: 999,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <Text style={{ 
+              fontSize: '24px', 
+              fontWeight: '800', 
+              color: '#333', 
+              fontFamily: 'Pretendard-800'
+            }}>
+              음식 추가하기
+            </Text>
+          </div>
+          
+          {/* 스텝 인디케이터 */}
+          <div style={{ 
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '14px 0',
+            backgroundColor: 'white'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: modalPage === 1 ? '#000' : '#f0f0f0',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: modalPage === 1 ? 'white' : '#999',
+                fontFamily: 'Pretendard-600',
+                fontSize: '16px'
+              }}>
+                1
+              </div>
+              <div style={{
+                width: '40px',
+                height: '2px',
+                backgroundColor: modalPage >= 2 ? '#000' : '#f0f0f0'
+              }}></div>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: modalPage === 2 ? '#000' : '#f0f0f0',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: modalPage === 2 ? 'white' : '#999',
+                fontFamily: 'Pretendard-600',
+                fontSize: '16px'
+              }}>
+                2
+              </div>
+              <div style={{
+                width: '40px',
+                height: '2px',
+                backgroundColor: modalPage === 3 ? '#000' : '#f0f0f0'
+              }}></div>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: modalPage === 3 ? '#000' : '#f0f0f0',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: modalPage === 3 ? 'white' : '#999',
+                fontFamily: 'Pretendard-600',
+                fontSize: '16px'
+              }}>
+                3
+              </div>
+            </div>
+          </div>
+          
+          {/* 본문 */}
+          <div style={{ 
+            padding: '5px 2px',
+            flex: 1
+          }}>
+            {modalPage === 1 && (
+              <div>
+                <Text style={{ 
+                  fontSize: '24px', 
+                  fontWeight: '700', 
+                  color: '#333', 
+                  fontFamily: 'Pretendard-700',
+                  display: 'block',
+                  marginBottom: '20px'
+                }}>
+                  음식의 이름을 알려주세요
+                </Text>
+                <Form layout="vertical">
+                  <Form.Item 
+                    label={
+                      <Text style={{ 
+                        fontSize: '16px', 
+                        fontWeight: '600',
+                        paddingLeft: '3px',
+                        opacity: 0.8,
+                        color: '#333', 
+                        fontFamily: 'Pretendard-600',
+                      }}>
+                        음식 이름
+                      </Text>
+                    }
+                    help={
+                      <Text style={{ 
+                        color: '#888', 
+                        fontSize: '14px',
+                        fontFamily: 'Pretendard-400'
+                      }}>
+                        음식 이름을 상세하게 입력해주세요 (예: 돼지고기 김치찌개, 맘스터치 싸이버거 등)
+                      </Text>
+                    }
+                  >
+                    <Input
+                      name="name"
+                      value={newFood.name}
+                      placeholder="예) 김치찌개, 돼지고기 김치찌개"
+                      onChange={(e) => handleInputChange(e, 'name')}
+                      style={{ 
+                        borderRadius: '12px', 
+                        height: '50px',
+                        fontSize: '16px',
+                        padding: '8px 16px',
+                        border: '2px solid #f0f0f0'
+                      }}
+                    />
+                  </Form.Item>
+                </Form>
+              </div>
+            )}
+
+            {modalPage === 2 && (
+              <div>
+                <Text style={{ 
+                  fontSize: '24px', 
+                  fontWeight: '700', 
+                  color: '#333', 
+                  fontFamily: 'Pretendard-700',
+                  display: 'block',
+                  marginBottom: '20px'
+                }}>
+                  영양 정보 검색
+                </Text>
+                
+                <div style={{marginBottom: '20px'}}>
+                  <Text style={{ 
+                    fontSize: '16px', 
+                    color: '#666', 
+                    fontFamily: 'Pretendard-400'
+                  }}>
+                    "{newFood.name}" 영양성분 정보
+                  </Text>
+                </div>
+                
+                {/* 검색 버튼 */}
+                <Button 
+                  onClick={searchFoodNutrition}
+                  loading={isSearching}
+                  style={{ 
+                    width: '100%',
+                    height: '40px',
+                    borderRadius: '12px',
+                    backgroundColor: '#5FDD9D',
+                    borderColor: '#5FDD9D',
+                    fontFamily: 'Pretendard-600',
+                    fontSize: '16px',
+                    color: 'white',
+                    marginBottom: '20px'
+                  }}
                 >
-                  <Select.Option value="인분">인분</Select.Option>
-                  <Select.Option value="g">g</Select.Option>
-                </Select>
-              }
-            />
-          </Form.Item>
-        </Form>
+                  영양성분 검색하기
+                </Button>
+                
+                {/* 검색 결과 없음 */}
+                {noSearchResult && (
+                  <div style={{
+                    padding: '20px',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '12px',
+                    textAlign: 'center',
+                    marginBottom: '20px'
+                  }}>
+                    <Text style={{ 
+                      fontSize: '16px', 
+                      color: '#666', 
+                      fontFamily: 'Pretendard-500' 
+                    }}>
+                      '{newFood.name}'에 대한 영양성분 정보를 찾을 수 없습니다.
+                    </Text>
+                    <Button 
+                      onClick={handleManualAdd} 
+                      type="primary"
+                      style={{ 
+                        marginTop: '16px',
+                        borderRadius: '8px',
+                        backgroundColor: '#5FDD9D',
+                        borderColor: '#5FDD9D'
+                      }}
+                    >
+                      직접 추가하기
+                    </Button>
+                  </div>
+                )}
+                
+                {/* 검색 결과 목록 */}
+                {foodSearchResults.length > 0 && (
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #f0f0f0',
+                    marginBottom: '20px',
+                    overflow: 'auto',
+                    maxHeight: '350px'
+                  }}>
+                    {foodSearchResults.map((item, index) => (
+                      <div 
+                        key={index}
+                        onClick={() => selectFoodInfo(item)}
+                        style={{
+                          padding: '10px 10px',
+                          borderBottom: index < foodSearchResults.length - 1 ? '1px solid #f0f0f0' : 'none',
+                          cursor: 'pointer',
+                          backgroundColor: selectedFoodInfo === item ? '#f0fff7' : 'white'
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div>
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '600', 
+                              color: selectedFoodInfo === item ? '#5FDD9D' : '#333', 
+                              fontFamily: 'Pretendard-600'
+                            }}>
+                              {item.name}
+                            </Text>
+                            {item.brand && (
+                              <Text style={{ 
+                                fontSize: '11px', 
+                                color: '#888', 
+                                fontFamily: 'Pretendard-400',
+                                marginLeft: '8px'
+                              }}>
+                                ({item.brand}) - {item.unit}
+                              </Text>
+                            )}
+                          </div>
+                          {selectedFoodInfo === item && (
+                            <CheckCircleTwoTone
+                              twoToneColor="#5FDD9D"
+                              style={{ fontSize: 20 }}
+                            />
+                          )}
+                        </div>
+                        <div style={{marginTop: '5px'}}>
+                          <Text style={{ 
+                            fontSize: '12px', 
+                            color: '#666', 
+                            fontFamily: 'Pretendard-400'
+                          }}>
+                            칼로리: {item.calories}kcal | 탄수화물: {item.carbs}g | 단백질: {item.protein}g | 지방: {item.fat}g
+                          </Text>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* 직접 입력 안내 */}
+                {!isSearching && foodSearchResults.length === 0 && !noSearchResult && (
+                  <div style={{
+                    padding: '20px',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '12px',
+                    textAlign: 'center'
+                  }}>
+                    <Text style={{ 
+                      fontSize: '16px', 
+                      color: '#666', 
+                      fontFamily: 'Pretendard-500' 
+                    }}>
+                      상단의 '영양성분 검색하기' 버튼을 눌러 검색해주세요.
+                    </Text>
+                    <Text style={{ 
+                      fontSize: '14px', 
+                      color: '#999', 
+                      fontFamily: 'Pretendard-400',
+                      display: 'block',
+                      marginTop: '10px'
+                    }}>
+                      검색해도 결과가 없거나 직접 입력하고 싶으시면 아래 버튼을 클릭하세요.
+                    </Text>
+                    <Button 
+                      onClick={handleManualAdd} 
+                      style={{ 
+                        marginTop: '16px',
+                        borderRadius: '8px',
+                        borderColor: '#5FDD9D',
+                        color: '#5FDD9D'
+                      }}
+                    >
+                      직접 추가하기
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {modalPage === 3 && (
+              <div>
+                {/* 고정 영역 - 제목 */}
+                <div>
+                  <Text style={{ 
+                    fontSize: '24px', 
+                    fontWeight: '700', 
+                    color: '#333', 
+                    fontFamily: 'Pretendard-700',
+                    display: 'block',
+                    marginBottom: '20px'
+                  }}>
+                    음식 중량을 입력해 주세요
+                  </Text>
+                  <Text style={{ 
+                    fontSize: '16px', 
+                    color: '#666', 
+                    fontFamily: 'Pretendard-400',
+                    display: 'block',
+                    marginBottom: '20px'
+                  }}>
+                    입력한 중량이 1인분으로 설정됩니다
+                  </Text>
+                </div>
+                
+                {/* 스크롤 영역 - 폼 */}
+                <div style={{
+                  maxHeight: 'calc(90vh - 350px)', // 적절한 높이로 조정
+                  overflowY: 'auto',
+                  paddingRight: '5px' // 스크롤바 공간 확보
+                }}>
+                  <Form layout="vertical">
+                    {/* 단위 선택 버튼 */}
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '12px', 
+                      marginBottom: '24px' 
+                    }}>
+                      <div 
+                        onClick={() => handleWeightUnitChange('g')}
+                        style={{
+                          flex: 1,
+                          height: '50px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: `2px solid ${weightUnit === 'g' ? '#5FDD9D' : '#f0f0f0'}`,
+                          borderRadius: '12px',
+                          backgroundColor: weightUnit === 'g' ? '#f0fff7' : 'white',
+                          cursor: 'pointer',
+                          fontFamily: 'Pretendard-600',
+                          fontSize: '16px',
+                          color: weightUnit === 'g' ? '#5FDD9D' : '#666'
+                        }}
+                      >
+                        그램(g)
+                      </div>
+                      <div 
+                        onClick={() => handleWeightUnitChange('ml')}
+                        style={{
+                          flex: 1,
+                          height: '50px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: `2px solid ${weightUnit === 'ml' ? '#5FDD9D' : '#f0f0f0'}`,
+                          borderRadius: '12px',
+                          backgroundColor: weightUnit === 'ml' ? '#f0fff7' : 'white',
+                          cursor: 'pointer',
+                          fontFamily: 'Pretendard-600',
+                          fontSize: '16px',
+                          color: weightUnit === 'ml' ? '#5FDD9D' : '#666'
+                        }}
+                      >
+                        밀리리터(ml)
+                      </div>
+                    </div>
+                    
+                    <Form.Item 
+                      label={
+                        <Text style={{ 
+                          fontSize: '18px', 
+                          fontWeight: '600', 
+                          color: '#333', 
+                          fontFamily: 'Pretendard-600'
+                        }}>
+                          총 중량
+                        </Text>
+                      }
+                      help={
+                        <Text style={{ 
+                          color: '#888', 
+                          fontSize: '12px',
+                          fontFamily: 'Pretendard-400',
+                          paddingLeft: '15px'
+                        }}>
+                          {weightUnit === 'g' 
+                            ? '음식의 총 중량을 g 단위로 입력해주세요 (예: 100, 250)' 
+                            : '음식의 총 용량을 ml 단위로 입력해주세요 (예: 200, 500)'}
+                        </Text>
+                      }
+                    >
+                      <div style={{ position: 'relative' }}>
+                        <Input
+                          name="weight"
+                          value={newFood.weight}
+                          placeholder={weightUnit === 'g' ? "예) 100, 250" : "예) 200, 500"}
+                          onChange={(e) => handleInputChange(e, 'weight')}
+                          style={{ 
+                            borderRadius: '12px', 
+                            height: '50px',
+                            fontSize: '16px',
+                            padding: '8px 16px',
+                            border: '2px solid #f0f0f0',
+                            paddingRight: '60px',
+                          }}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          right: '16px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          fontFamily: 'Pretendard-600',
+                          fontSize: '16px',
+                          color: '#666'
+                        }}>
+                          {weightUnit}
+                        </div>
+                      </div>
+                    </Form.Item>
+
+                    {/* 직접 입력용 영양성분 필드 (선택된 음식 정보가 없을 때만 표시) */}
+                    {/* {!selectedFoodInfo && (
+                      <div style={{
+                        marginTop: '20px',
+                        backgroundColor: '#f9f9f9',
+                        padding: '15px',
+                        borderRadius: '12px'
+                      }}>
+                        <Text style={{ 
+                          fontSize: '18px', 
+                          fontWeight: '600', 
+                          color: '#333', 
+                          fontFamily: 'Pretendard-600',
+                          display: 'block',
+                          marginBottom: '15px'
+                        }}>
+                          영양성분 직접 입력 (선택사항)
+                        </Text>
+                        
+                        <Form.Item 
+                          label={
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '500', 
+                              color: '#333', 
+                              fontFamily: 'Pretendard-500'
+                            }}>
+                              칼로리 (kcal)
+                            </Text>
+                          }
+                        >
+                          <Input
+                            placeholder="예) 250"
+                            value={newFood.calories}
+                            onChange={(e) => setNewFood({
+                              ...newFood,
+                              calories: e.target.value ? Number(e.target.value) : null
+                            })}
+                            style={{ 
+                              borderRadius: '8px', 
+                              height: '40px',
+                              border: '1px solid #f0f0f0'
+                            }}
+                            type="number"
+                          />
+                        </Form.Item>
+                        
+                        <Form.Item 
+                          label={
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '500', 
+                              color: '#333', 
+                              fontFamily: 'Pretendard-500'
+                            }}>
+                              탄수화물 (g)
+                            </Text>
+                          }
+                        >
+                          <Input
+                            placeholder="예) 30"
+                            value={newFood.nutrients.carbs}
+                            onChange={(e) => setNewFood({
+                              ...newFood,
+                              nutrients: {
+                                ...newFood.nutrients,
+                                carbs: e.target.value ? Number(e.target.value) : null
+                              }
+                            })}
+                            style={{ 
+                              borderRadius: '8px', 
+                              height: '40px',
+                              border: '1px solid #f0f0f0'
+                            }}
+                            type="number"
+                          />
+                        </Form.Item>
+                        
+                        <Form.Item 
+                          label={
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '500', 
+                              color: '#333', 
+                              fontFamily: 'Pretendard-500'
+                            }}>
+                              단백질 (g)
+                            </Text>
+                          }
+                        >
+                          <Input
+                            placeholder="예) 15"
+                            value={newFood.nutrients.protein}
+                            onChange={(e) => setNewFood({
+                              ...newFood,
+                              nutrients: {
+                                ...newFood.nutrients,
+                                protein: e.target.value ? Number(e.target.value) : null
+                              }
+                            })}
+                            style={{ 
+                              borderRadius: '8px', 
+                              height: '40px',
+                              border: '1px solid #f0f0f0'
+                            }}
+                            type="number"
+                          />
+                        </Form.Item>
+                        
+                        <Form.Item 
+                          label={
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '500', 
+                              color: '#333', 
+                              fontFamily: 'Pretendard-500'
+                            }}>
+                              지방 (g)
+                            </Text>
+                          }
+                        >
+                          <Input
+                            placeholder="예) 10"
+                            value={newFood.nutrients.fat}
+                            onChange={(e) => setNewFood({
+                              ...newFood,
+                              nutrients: {
+                                ...newFood.nutrients,
+                                fat: e.target.value ? Number(e.target.value) : null
+                              }
+                            })}
+                            style={{ 
+                              borderRadius: '8px', 
+                              height: '40px',
+                              border: '1px solid #f0f0f0'
+                            }}
+                            type="number"
+                          />
+                        </Form.Item>
+                      </div>
+                    )} */}
+                    
+                    {/* 영양성분 정보 표시 (선택된 음식 정보가 있을 때만 표시) */}
+                    {selectedFoodInfo && (
+                      <div style={{
+                        marginTop: '10px',
+                        padding: '15px',
+                        backgroundColor: '#f9f9f9',
+                        borderRadius: '12px'
+                      }}>
+                        <Text style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '600', 
+                          color: '#333', 
+                          fontFamily: 'Pretendard-600',
+                          display: 'block',
+                          marginBottom: '10px'
+                        }}>
+                          영양성분 정보
+                        </Text>
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '10px'
+                        }}>
+                          <div style={{
+                            flex: '1 0 45%',
+                            backgroundColor: 'white',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            textAlign: 'center'
+                          }}>
+                            <Text style={{ 
+                              fontSize: '14px', 
+                              color: '#666', 
+                              fontFamily: 'Pretendard-400',
+                              display: 'block'
+                            }}>
+                              칼로리
+                            </Text>
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '600', 
+                              color: '#5FDD9D', 
+                              fontFamily: 'Pretendard-600'
+                            }}>
+                              {selectedFoodInfo.calories}kcal
+                            </Text>
+                          </div>
+                          <div style={{
+                            flex: '1 0 45%',
+                            backgroundColor: 'white',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            textAlign: 'center'
+                          }}>
+                            <Text style={{ 
+                              fontSize: '14px', 
+                              color: '#666', 
+                              fontFamily: 'Pretendard-400',
+                              display: 'block'
+                            }}>
+                              탄수화물
+                            </Text>
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '600', 
+                              color: '#333', 
+                              fontFamily: 'Pretendard-600'
+                            }}>
+                              {selectedFoodInfo.carbs}g
+                            </Text>
+                          </div>
+                          <div style={{
+                            flex: '1 0 45%',
+                            backgroundColor: 'white',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            textAlign: 'center'
+                          }}>
+                            <Text style={{ 
+                              fontSize: '14px', 
+                              color: '#666', 
+                              fontFamily: 'Pretendard-400',
+                              display: 'block'
+                            }}>
+                              단백질
+                            </Text>
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '600', 
+                              color: '#333', 
+                              fontFamily: 'Pretendard-600'
+                            }}>
+                              {selectedFoodInfo.protein}g
+                            </Text>
+                          </div>
+                          <div style={{
+                            flex: '1 0 45%',
+                            backgroundColor: 'white',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            textAlign: 'center'
+                          }}>
+                            <Text style={{ 
+                              fontSize: '14px', 
+                              color: '#666', 
+                              fontFamily: 'Pretendard-400',
+                              display: 'block'
+                            }}>
+                              지방
+                            </Text>
+                            <Text style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '600', 
+                              color: '#333', 
+                              fontFamily: 'Pretendard-600'
+                            }}>
+                              {selectedFoodInfo.fat}g
+                            </Text>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Form>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* 하단 버튼 */}
+          <div style={{ 
+            padding: '16px 20px', 
+            borderTop: '1px solid #f0f0f0',
+            backgroundColor: 'white',
+            position: 'sticky',
+            bottom: 0,
+            width: '100%',
+            display: 'flex',
+            gap: '12px'
+          }}>
+            {modalPage === 1 ? (
+              <>
+                <Button 
+                  onClick={handleModalCancel}
+                  style={{ 
+                    flex: 1,
+                    height: '50px',
+                    borderRadius: '12px',
+                    border: '2px solid #f0f0f0',
+                    fontFamily: 'Pretendard-600',
+                    fontSize: '16px',
+                    color: '#666'
+                  }}
+                >
+                  취소
+                </Button>
+                <Button 
+                  onClick={() => newFood.name.trim() ? setModalPage(2) : null}
+                  disabled={!newFood.name.trim()}
+                  style={{ 
+                    flex: 1,
+                    height: '50px',
+                    borderRadius: '12px',
+                    backgroundColor: newFood.name.trim() ? '#5FDD9D' : '#f5f5f5',
+                    borderColor: newFood.name.trim() ? '#5FDD9D' : '#f5f5f5',
+                    fontFamily: 'Pretendard-600',
+                    fontSize: '16px',
+                    color: newFood.name.trim() ? 'white' : '#999'
+                  }}
+                >
+                  다음
+                </Button>
+              </>
+            ) : modalPage === 2 ? (
+              <>
+                <Button 
+                  onClick={() => setModalPage(1)}
+                  style={{ 
+                    flex: 1,
+                    height: '50px',
+                    borderRadius: '12px',
+                    border: '2px solid #f0f0f0',
+                    fontFamily: 'Pretendard-600',
+                    fontSize: '16px',
+                    color: '#666'
+                  }}
+                >
+                  이전
+                </Button>
+                <Button 
+                  onClick={() => setModalPage(3)}
+                  style={{ 
+                    flex: 1,
+                    height: '50px',
+                    borderRadius: '12px',
+                    backgroundColor: '#5FDD9D',
+                    borderColor: '#5FDD9D',
+                    fontFamily: 'Pretendard-600',
+                    fontSize: '16px',
+                    color: 'white'
+                  }}
+                >
+                  다음
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  onClick={() => setModalPage(2)}
+                  style={{ 
+                    flex: 1,
+                    height: '50px',
+                    borderRadius: '12px',
+                    border: '2px solid #f0f0f0',
+                    fontFamily: 'Pretendard-600',
+                    fontSize: '16px',
+                    color: '#666'
+                  }}
+                >
+                  이전
+                </Button>
+                <Button 
+                  onClick={handleModalOk}
+                  disabled={!isFormValid()}
+                  style={{ 
+                    flex: 1,
+                    height: '50px',
+                    borderRadius: '12px',
+                    backgroundColor: isFormValid() ? '#5FDD9D' : '#f5f5f5',
+                    borderColor: isFormValid() ? '#5FDD9D' : '#f5f5f5',
+                    fontFamily: 'Pretendard-600',
+                    fontSize: '16px',
+                    color: isFormValid() ? 'white' : '#999'
+                  }}
+                >
+                  추가하기
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

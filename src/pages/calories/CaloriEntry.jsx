@@ -247,13 +247,13 @@ const CaloriEntry = () => {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                   }}>
                     <Text style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'Pretendard-600' }}>
-                      {item}
+                      {item} (1인분 당 250g)
                     </Text>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <InputNumber
                         min={0.5}
                         step={0.5}
-                        value={foodPortions[item] || 1}
+                        value={foodPortions[item] || 250}
                         onChange={(value) => handlePortionChange(item, value)}
                         style={{ 
                           width: '65px',
@@ -261,7 +261,7 @@ const CaloriEntry = () => {
                           boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                         }}
                       />
-                      <Text style={{ marginLeft: '5px', fontSize: '14px' }}>인분</Text>
+                      <Text style={{ marginLeft: '5px', fontSize: '14px' }}>g</Text>
                     </div>
                   </List.Item>
                 )}
