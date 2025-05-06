@@ -9,9 +9,20 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setFoods } from '../../redux/actions/foodActions';
 import { auth } from '../../firebaseconfig';
 import { FixedSizeList } from 'react-window';
+import { searchFoodNutrition as fetchFoodNutrition } from '../../api/api';
 
 const { Text } = Typography;
 const { Search } = Input;
+
+// 관리자 접근 가능한 이메일 목록
+const ADMIN_EMAILS = [
+  'eodud653923@gmail.com',
+  'youngwonhahn00@gmail.com',
+  'juhyeok0123@gmail.com',
+  'wn990123@gmail.com',
+  'garcia29845@gmail.com',
+  // 'yunj29845@gmail.com',
+];
 
 const Meal = () => {
   const { mealType } = useParams();
@@ -42,6 +53,7 @@ const Meal = () => {
   const containerRef = useRef(null);
   const [listHeight, setListHeight] = useState(400);
   const [weightUnit, setWeightUnit] = useState('g');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const foodsRef = ref(realtimeDb, 'foods');
@@ -52,7 +64,23 @@ const Meal = () => {
       }
     });
 
-    return () => unsubscribe();
+    // 관리자 권한 체크
+    const checkAdminStatus = () => {
+      const currentUser = auth.currentUser;
+      if (currentUser && currentUser.email) {
+        setIsAdmin(ADMIN_EMAILS.includes(currentUser.email));
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+    const authUnsubscribe = auth.onAuthStateChanged(checkAdminStatus);
+
+    return () => {
+      unsubscribe();
+      authUnsubscribe();
+    };
   }, [dispatch]);
 
   useEffect(() => {
@@ -181,17 +209,22 @@ const Meal = () => {
       const foodKey = `${newFood.name}_${sanitizedEmail}_${timestamp}`;
       
       const foodsRef = ref(realtimeDb, `foods/${foodKey}`);
-      const weightWithUnit = `${newFood.weight}${weightUnit}`;
       
-      // 서버로 전송할 때 영양소 정보를 null로 설정
+      // weight가 올바른 형식인지 확인 (숫자 + 단위(g 또는 ml))
+      const weightWithUnit = newFood.weight.endsWith(weightUnit) 
+        ? newFood.weight 
+        : `${newFood.weight}${weightUnit}`;
+      
+      // 서버로 전송할 때 영양소 정보 설정 (관리자가 아닌 경우 항상 null)
       const foodData = { 
         ...newFood, 
         weight: weightWithUnit,
-        calories: null,
+        // 관리자가 아니거나 영양소 정보가 없는 경우 null로 설정
+        calories: isAdmin && newFood.calories ? newFood.calories : null,
         nutrients: {
-          carbs: null,
-          protein: null,
-          fat: null,
+          carbs: isAdmin && newFood.nutrients.carbs ? newFood.nutrients.carbs : null,
+          protein: isAdmin && newFood.nutrients.protein ? newFood.nutrients.protein : null,
+          fat: isAdmin && newFood.nutrients.fat ? newFood.nutrients.fat : null,
         },
         createdAt: timestamp // 작성 시간 정보도 데이터에 추가
       };
@@ -371,86 +404,38 @@ const Meal = () => {
     };
   }, [handleResize]);
 
-  const searchFoodNutrition = () => {
+  const searchFoodNutrition = async () => {
     if (!newFood.name.trim()) return;
     
     setIsSearching(true);
     setNoSearchResult(false);
     setFoodSearchResults([]);
     
-    // 여기에서는 실제 API 호출이 필요하지만, 
-    // 현재 프론트엔드에서 직접 fatsecret 웹사이트를 검색할 수 없으므로
-    // 백엔드 API를 통해 구현해야 함을 안내
-    
-    // 모의 데이터로 대체 (실제 구현 시 API 호출 필요)
-    setTimeout(() => {
-      const mockResults = [
-        {
-          name: '김치찌개',
-          brand: '일반명',
-          unit: '1인분 (300g)',
-          calories: 250,
-          fat: 15,
-          carbs: 10,
-          protein: 20
-        },
-        {
-          name: '순두부찌개',
-          brand: '일반명',
-          unit: '1인분 (350g)',
-          calories: 200,
-          fat: 12,
-          carbs: 8,
-          protein: 18
-        },
-        {
-          name: '된장찌개',
-          brand: '일반명',
-          unit: '1인분 (300ml)',
-          calories: 180,
-          fat: 8,
-          carbs: 15,
-          protein: 12
-        },
-        {
-          name: '김치찌개',
-          brand: '일반명',
-          unit: '1인분 (300g)',
-          calories: 250,
-          fat: 15,
-          carbs: 10,
-          protein: 20
-        },
-        {
-          name: '순두부찌개',
-          brand: '일반명',
-          unit: '1인분 (350g)',
-          calories: 200,
-          fat: 12,
-          carbs: 8,
-          protein: 18
-        },
-        {
-          name: '된장찌개',
-          brand: '일반명',
-          unit: '1인분 (300ml)',
-          calories: 180,
-          fat: 8,
-          carbs: 15,
-          protein: 12
-        }
-      ];
+    try {
+      const result = await fetchFoodNutrition(newFood.name.trim());
       
-      // newFood.name이 "없음"이면 결과가 없는 상태 시뮬레이션
-      if (newFood.name.includes('없음')) {
-        setNoSearchResult(true);
-        setFoodSearchResults([]);
+      if (result && result.items && result.items.length > 0) {
+        // API 응답 형식에 맞게 데이터 변환
+        const formattedResults = result.items.map(item => ({
+          name: item.name,
+          brand: item.brand,
+          unit: `${item.serving} (${item.weight})`,
+          calories: parseFloat(item.calories),
+          carbs: parseFloat(item.carbs),
+          protein: parseFloat(item.protein),
+          fat: parseFloat(item.fat)
+        }));
+        
+        setFoodSearchResults(formattedResults);
       } else {
-        setFoodSearchResults(mockResults);
+        setNoSearchResult(true);
       }
-      
+    } catch (error) {
+      console.error('음식 검색 실패:', error);
+      setNoSearchResult(true);
+    } finally {
       setIsSearching(false);
-    }, 1000);
+    }
   };
 
   // 직접 추가하기 함수
@@ -1066,16 +1051,14 @@ const Meal = () => {
                             }}>
                               {item.name}
                             </Text>
-                            {item.brand && (
-                              <Text style={{ 
-                                fontSize: '11px', 
-                                color: '#888', 
-                                fontFamily: 'Pretendard-400',
-                                marginLeft: '8px'
-                              }}>
-                                ({item.brand}) - {item.unit}
-                              </Text>
-                            )}
+                            <Text style={{ 
+                              fontSize: '11px', 
+                              color: '#888', 
+                              fontFamily: 'Pretendard-400',
+                              marginLeft: '8px'
+                            }}>
+                              {item.brand ? `(${item.brand}) - ` : ''}{item.unit}
+                            </Text>
                           </div>
                           {selectedFoodInfo === item && (
                             <CheckCircleTwoTone
@@ -1084,15 +1067,42 @@ const Meal = () => {
                             />
                           )}
                         </div>
-                        <div style={{marginTop: '5px'}}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          marginTop: '8px',
+                          backgroundColor: '#f8f8f8',
+                          padding: '8px 10px',
+                          borderRadius: '8px'
+                        }}>
                           <Text style={{ 
                             fontSize: '12px', 
+                            fontWeight: '600',
                             color: '#666', 
-                            fontFamily: 'Pretendard-400'
+                            fontFamily: 'Pretendard-600',
+                            marginRight: '5px'
                           }}>
-                            칼로리: {item.calories}kcal | 탄수화물: {item.carbs}g | 단백질: {item.protein}g | 지방: {item.fat}g
+                            제공량:
+                          </Text>
+                          <Text style={{ 
+                            fontSize: '12px', 
+                            color: '#333', 
+                            fontFamily: 'Pretendard-500'
+                          }}>
+                            {item.unit}
                           </Text>
                         </div>
+                        {isAdmin && (
+                          <div style={{marginTop: '5px'}}>
+                            <Text style={{ 
+                              fontSize: '12px', 
+                              color: '#666', 
+                              fontFamily: 'Pretendard-400'
+                            }}>
+                              칼로리: {item.calories}kcal | 탄수화물: {item.carbs}g | 단백질: {item.protein}g | 지방: {item.fat}g
+                            </Text>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1427,110 +1437,171 @@ const Meal = () => {
                           display: 'block',
                           marginBottom: '10px'
                         }}>
-                          영양성분 정보
+                          {isAdmin ? '영양성분 정보' : '제공량 정보'}
                         </Text>
+                        
+                        {/* 제공량 정보 (모든 사용자에게 표시) */}
                         <div style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '10px'
+                          backgroundColor: 'white',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          marginBottom: '10px',
+                          border: '1px solid #eee'
                         }}>
-                          <div style={{
-                            flex: '1 0 45%',
-                            backgroundColor: 'white',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            textAlign: 'center'
+                          <Text style={{ 
+                            fontSize: '14px', 
+                            color: '#666', 
+                            fontFamily: 'Pretendard-500',
+                            display: 'block',
+                            marginBottom: '5px'
                           }}>
+                            1인분 기준:
+                          </Text>
+                          <Text style={{ 
+                            fontSize: '18px', 
+                            fontWeight: '600', 
+                            color: '#333', 
+                            fontFamily: 'Pretendard-600'
+                          }}>
+                            {selectedFoodInfo.unit}
+                          </Text>
+                          {selectedFoodInfo.brand && (
                             <Text style={{ 
                               fontSize: '14px', 
-                              color: '#666', 
+                              color: '#888', 
                               fontFamily: 'Pretendard-400',
-                              display: 'block'
+                              display: 'block',
+                              marginTop: '5px'
                             }}>
-                              칼로리
+                              브랜드: {selectedFoodInfo.brand}
                             </Text>
-                            <Text style={{ 
-                              fontSize: '16px', 
-                              fontWeight: '600', 
-                              color: '#5FDD9D', 
-                              fontFamily: 'Pretendard-600'
-                            }}>
-                              {selectedFoodInfo.calories}kcal
-                            </Text>
-                          </div>
-                          <div style={{
-                            flex: '1 0 45%',
-                            backgroundColor: 'white',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            textAlign: 'center'
-                          }}>
-                            <Text style={{ 
-                              fontSize: '14px', 
-                              color: '#666', 
-                              fontFamily: 'Pretendard-400',
-                              display: 'block'
-                            }}>
-                              탄수화물
-                            </Text>
-                            <Text style={{ 
-                              fontSize: '16px', 
-                              fontWeight: '600', 
-                              color: '#333', 
-                              fontFamily: 'Pretendard-600'
-                            }}>
-                              {selectedFoodInfo.carbs}g
-                            </Text>
-                          </div>
-                          <div style={{
-                            flex: '1 0 45%',
-                            backgroundColor: 'white',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            textAlign: 'center'
-                          }}>
-                            <Text style={{ 
-                              fontSize: '14px', 
-                              color: '#666', 
-                              fontFamily: 'Pretendard-400',
-                              display: 'block'
-                            }}>
-                              단백질
-                            </Text>
-                            <Text style={{ 
-                              fontSize: '16px', 
-                              fontWeight: '600', 
-                              color: '#333', 
-                              fontFamily: 'Pretendard-600'
-                            }}>
-                              {selectedFoodInfo.protein}g
-                            </Text>
-                          </div>
-                          <div style={{
-                            flex: '1 0 45%',
-                            backgroundColor: 'white',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            textAlign: 'center'
-                          }}>
-                            <Text style={{ 
-                              fontSize: '14px', 
-                              color: '#666', 
-                              fontFamily: 'Pretendard-400',
-                              display: 'block'
-                            }}>
-                              지방
-                            </Text>
-                            <Text style={{ 
-                              fontSize: '16px', 
-                              fontWeight: '600', 
-                              color: '#333', 
-                              fontFamily: 'Pretendard-600'
-                            }}>
-                              {selectedFoodInfo.fat}g
-                            </Text>
-                          </div>
+                          )}
                         </div>
+                        
+                        {/* 영양성분 정보 (관리자에게만 표시) */}
+                        {isAdmin && (
+                          <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '10px'
+                          }}>
+                            <div style={{
+                              flex: '1 0 45%',
+                              backgroundColor: 'white',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              textAlign: 'center'
+                            }}>
+                              <Text style={{ 
+                                fontSize: '14px', 
+                                color: '#666', 
+                                fontFamily: 'Pretendard-400',
+                                display: 'block'
+                              }}>
+                                칼로리
+                              </Text>
+                              <Text style={{ 
+                                fontSize: '16px', 
+                                fontWeight: '600', 
+                                color: '#5FDD9D', 
+                                fontFamily: 'Pretendard-600'
+                              }}>
+                                {selectedFoodInfo.calories}kcal
+                              </Text>
+                            </div>
+                            <div style={{
+                              flex: '1 0 45%',
+                              backgroundColor: 'white',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              textAlign: 'center'
+                            }}>
+                              <Text style={{ 
+                                fontSize: '14px', 
+                                color: '#666', 
+                                fontFamily: 'Pretendard-400',
+                                display: 'block'
+                              }}>
+                                탄수화물
+                              </Text>
+                              <Text style={{ 
+                                fontSize: '16px', 
+                                fontWeight: '600', 
+                                color: '#333', 
+                                fontFamily: 'Pretendard-600'
+                              }}>
+                                {selectedFoodInfo.carbs}g
+                              </Text>
+                            </div>
+                            <div style={{
+                              flex: '1 0 45%',
+                              backgroundColor: 'white',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              textAlign: 'center'
+                            }}>
+                              <Text style={{ 
+                                fontSize: '14px', 
+                                color: '#666', 
+                                fontFamily: 'Pretendard-400',
+                                display: 'block'
+                              }}>
+                                단백질
+                              </Text>
+                              <Text style={{ 
+                                fontSize: '16px', 
+                                fontWeight: '600', 
+                                color: '#333', 
+                                fontFamily: 'Pretendard-600'
+                              }}>
+                                {selectedFoodInfo.protein}g
+                              </Text>
+                            </div>
+                            <div style={{
+                              flex: '1 0 45%',
+                              backgroundColor: 'white',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              textAlign: 'center'
+                            }}>
+                              <Text style={{ 
+                                fontSize: '14px', 
+                                color: '#666', 
+                                fontFamily: 'Pretendard-400',
+                                display: 'block'
+                              }}>
+                                지방
+                              </Text>
+                              <Text style={{ 
+                                fontSize: '16px', 
+                                fontWeight: '600', 
+                                color: '#333', 
+                                fontFamily: 'Pretendard-600'
+                              }}>
+                                {selectedFoodInfo.fat}g
+                              </Text>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* 일반 사용자에게 표시될 메시지 */}
+                        {!isAdmin && (
+                          <div style={{
+                            backgroundColor: '#f0f0f0',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                            marginTop: '5px'
+                          }}>
+                            <Text style={{ 
+                              fontSize: '13px', 
+                              color: '#888', 
+                              fontFamily: 'Pretendard-400'
+                            }}>
+                              영양성분 정보는 관리자 전용 기능입니다.
+                            </Text>
+                          </div>
+                        )}
                       </div>
                     )}
                   </Form>
@@ -1657,3 +1728,4 @@ const Meal = () => {
 };
 
 export default Meal;
+
