@@ -253,7 +253,7 @@ const CaloriEntry = () => {
                       boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                     }}>
                       <Text style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'Pretendard-600' }}>
-                        {item} ({portion}인분 당 {displayWeightText})
+                        {item} <span style={{ fontSize: '12px', fontWeight: '400', fontFamily: 'Pretendard-400'  }}>({portion}인분 당 {displayWeightText})</span>
                       </Text>
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         <InputNumber
