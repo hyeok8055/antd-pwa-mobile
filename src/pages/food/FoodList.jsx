@@ -780,7 +780,6 @@ const Meal = () => {
           padding: 0,
           borderRadius: 8,
           height: '90vh', 
-          padding: 0,
           overflow: 'hidden'
         }}
         width="100%"

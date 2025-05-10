@@ -72,27 +72,27 @@ const CaloriEntry = () => {
 
   const calculateActualCalories = (foodDetails) => {
     return foodDetails.reduce((total, food) => {
-      const weight = extractNumber(food.weight);
       const portion = foodPortions[food.name] || 1; // 인분 정보 사용
       
       // 칼로리 정보가 없거나 에러가 있는 경우 0으로 처리
       const calories = food && food.calories && !isNaN(Number(food.calories)) ? Number(food.calories) : 0;
       
-      return total + (calories * (weight / 100) * portion);
+      // 수정된 계산: 칼로리 * 인분
+      return total + (calories * portion);
     }, 0);
   };
 
   const handleClick = async () => {
     setLoading(true);
     try {
-      const actualCalories = calculateActualCalories(foodDetails);
-      const difference = Math.abs(actualCalories - parseInt(estimatedCalories, 10) || 0);
+      const actualCaloriesTotal = calculateActualCalories(foodDetails); // 변수명 변경 (스코프 충돌 방지)
+      const difference = Math.abs(actualCaloriesTotal - parseInt(estimatedCalories, 10) || 0);
       setCalorieDifference(difference);
 
       const mappedFoods = foodDetails.map(food => {
-        const weight = extractNumber(food.weight);
+        const weight = extractNumber(food.weight); // 1인분 기준 중량 (DB 저장용)
         const portion = foodPortions[food.name] || 1; // 인분 정보 사용
-        const ratio = (weight / 100) * portion;
+        // const ratio = (weight / 100) * portion; // 제거됨
         
         // 모든 영양소 정보가 없는 경우 0으로 처리
         const calories = food.calories && !isNaN(Number(food.calories)) ? Number(food.calories) : 0;
@@ -100,21 +100,21 @@ const CaloriEntry = () => {
         const fat = food.nutrients?.fat && !isNaN(Number(food.nutrients.fat)) ? Number(food.nutrients.fat) : 0;
         const protein = food.nutrients?.protein && !isNaN(Number(food.nutrients.protein)) ? Number(food.nutrients.protein) : 0;
         
-        // 실제 섭취한 영양성분 계산
-        const actualCalories = calories * ratio;
-        const actualCarbs = carbs * ratio;
-        const actualFat = fat * ratio;
-        const actualProtein = protein * ratio;
+        // 실제 섭취한 영양성분 계산 (수정된 로직: 각 영양성분 * 인분)
+        const consumedCalories = calories * portion;
+        const consumedCarbs = carbs * portion;
+        const consumedFat = fat * portion;
+        const consumedProtein = protein * portion;
         
         return {
           name: food.name || '',
-          calories: actualCalories,
-          weight: weight,
-          portion: portion,
+          calories: consumedCalories, // 총 섭취 칼로리 (인분 적용)
+          weight: weight,             // 1인분 기준 중량
+          portion: portion,           // 사용자가 입력한 인분 수
           nutrients: {
-            carbs: actualCarbs,
-            fat: actualFat,
-            protein: actualProtein
+            carbs: consumedCarbs,     // 총 섭취 탄수화물 (인분 적용)
+            fat: consumedFat,         // 총 섭취 지방 (인분 적용)
+            protein: consumedProtein  // 총 섭취 단백질 (인분 적용)
           }
         };
       });
@@ -125,7 +125,7 @@ const CaloriEntry = () => {
         mealType,
         mappedFoods,
         Number(estimatedCalories),
-        actualCalories,
+        actualCaloriesTotal, // 수정된 총 실제 칼로리 사용
         selectedFoodNames,
         mealType !== 'snacks' ? 1 : 0 // 간식은 flag 값이 0
       );
@@ -235,36 +235,43 @@ const CaloriEntry = () => {
             }}>
               <List
                 dataSource={selectedFoodNames}
-                renderItem={(item) => (
-                  <List.Item style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between',
-                    padding: '8px 10px',
-                    borderRadius: '8px',
-                    backgroundColor: 'white',
-                    marginBottom: '8px', 
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                  }}>
-                    <Text style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'Pretendard-600' }}>
-                      {item} (1인분 당 250g)
-                    </Text>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <InputNumber
-                        min={0.5}
-                        step={0.5}
-                        value={foodPortions[item] || 250}
-                        onChange={(value) => handlePortionChange(item, value)}
-                        style={{ 
-                          width: '65px',
-                          borderRadius: '6px',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                      />
-                      <Text style={{ marginLeft: '5px', fontSize: '14px' }}>g</Text>
-                    </div>
-                  </List.Item>
-                )}
+                renderItem={(item) => {
+                  const foodDetail = foodDetails.find(fd => fd.name === item);
+                  const portion = foodPortions[item] || 1;
+                  // 1인분 기준 중량 * 인분 수. foodDetail이 아직 로드되지 않았을 경우 대비.
+                  const displayWeightText = foodDetail ? `${extractNumber(foodDetail.weight) * portion}g` : '---g';
+                  
+                  return (
+                    <List.Item style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: 'white',
+                      marginBottom: '8px', 
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                    }}>
+                      <Text style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'Pretendard-600' }}>
+                        {item} ({portion}인분 당 {displayWeightText})
+                      </Text>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <InputNumber
+                          min={0.5}
+                          step={0.5}
+                          value={foodPortions[item] || 1} // 기본값을 1로 수정
+                          onChange={(value) => handlePortionChange(item, value)}
+                          style={{ 
+                            width: '65px',
+                            borderRadius: '6px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                          }}
+                        />
+                        <Text style={{ marginLeft: '5px', fontSize: '14px' }}>인분</Text>
+                      </div>
+                    </List.Item>
+                  );
+                }}
               />
             </div>
           </div>
