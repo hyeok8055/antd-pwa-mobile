@@ -460,6 +460,7 @@ const Meal = () => {
     // 선택된 음식 정보로 newFood 업데이트
     setNewFood({
       ...newFood,
+      name: foodInfo.name,
       calories: foodInfo.calories,
       nutrients: {
         carbs: foodInfo.carbs,
@@ -1157,16 +1158,30 @@ const Meal = () => {
                     color: '#333', 
                     fontFamily: 'Pretendard-700',
                     display: 'block',
-                    marginBottom: '20px'
+                    marginBottom: '5px'
                   }}>
                     음식 중량을 입력해 주세요
                   </Text>
+                  {/* 추가된 음식 이름 표시 */}
+                  <Text style={{
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: '#5FDD9D',
+                    fontFamily: 'Pretendard-700',
+                    display: 'block',
+                    textAlign: 'center',
+                    marginBottom: '8px',
+                    wordBreak: 'keep-all', // 단어 단위 줄바꿈
+                  }}>
+                    {newFood.name}
+                  </Text>
                   <Text style={{ 
-                    fontSize: '16px', 
+                    fontSize: '16px',
                     color: '#666', 
                     fontFamily: 'Pretendard-400',
                     display: 'block',
-                    marginBottom: '20px'
+                    marginBottom: '20px',
+                    textAlign: 'center' // 중앙 정렬 추가
                   }}>
                     입력한 중량이 1인분으로 설정됩니다
                   </Text>
